@@ -4,10 +4,10 @@ We present a short introduction to Robot Vision. We first present the basic conc
 
 # Prerequisites
 
-What things you need to install the software and how to install them
+Things that you need to install the software and how to install them
 
 ```
-You should have ROS installed.
+You should have ROS1 installed.
 You should have OpenCV installed.
 You should have a working ROS workspace.
 ```
@@ -40,21 +40,28 @@ First, create a workspace:
 
 ```
 cd ~
-mkdir -p tidbots_ws/src
-cd tidbots_ws
+mkdir -p robovision_ros1_ws/src
+cd robovision_ros1_ws
 catkin_make
 ```
 
 Then, clone this repository into the src folder:
 
 ```
-cd ~/tidbots_ws/src
-git clone https://gitlab.com/tidbots/robointro.git
+cd ~/robovision_ros1_ws/src
+git clone https://github.com/ARTenshi/robovision_ros1.git
 cd ..
 catkin_make
 ```
 
-### 2.2 Test the code
+### 2.2 Download additional data
+
+This project requires additional data files, available [here (Google Drive)](https://bit.ly/3PzJp5m).
+
+Download those files into the `~/robovision_ros1_ws/src/robovision_ros1/data/rosbags/` folder.
+
+
+### 2.3 Test the code
 
 Run the following command in a terminal:
 
@@ -65,15 +72,15 @@ roscore
 In a second terminal, run these commands:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/tidbots_ws/src/robointro/1_images/data/baboon.png
+source ~/robovision_ros1_ws/devel/setup.bash
+rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1_ws/data/images/baboon.png
 ```
 
 
 Then, in a third terminal, run these commands:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
+source ~/robovision_ros1_ws/devel/setup.bash
 rosrun introvision_images my_subscriber
 ```
 
@@ -81,17 +88,17 @@ rosrun introvision_images my_subscriber
 
 Basic concepts on ROS image publishers and subscribers can be found here:
 
-> https://gitlab.com/tidbots/robointro/-/tree/main/1_images
+> [Lesson 1](https://github.com/ARTenshi/robovision_ros1/tree/main/1_images)
 
-To learn how process RGB images, follows the indications here:
+To learn how to process RGB images, follow the indications here:
 
-> https://gitlab.com/tidbots/robointro/-/tree/main/2_processing
+> [Lesson 2](https://github.com/ARTenshi/robovision_ros1/tree/main/2_processing)
 
 To work with RGBD images, enter here:
 
-> https://gitlab.com/tidbots/robointro/-/tree/main/3_rgbd
+> [Lesson 3](https://github.com/ARTenshi/robovision_ros1/tree/main/3_rgbd)
 
 # Authors
 
-* **Luis Contreras** - [AIBot](http://aibot.jp/)
+* **Luis Contreras** - [ARTenshi](https://artenshi.github.io/)
 * **Hiroyuki Okada** - [AIBot](http://aibot.jp/)

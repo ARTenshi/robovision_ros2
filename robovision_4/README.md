@@ -2,33 +2,33 @@
 
 The goal of this repository is to introduce students to image publishers and subscribers using ROS and OpenCV.
 
-# 0. Get the introduction to robot vision libraries
+# 0. Get the robot vision libraries
 
 ## 0.1 Clone this repository
 
-**Warning:** *You only need to do this once. If you have already created this repository in your local machine, pulling it again may cause a lost of your information.*
+**Warning:** *You only need to do this once. If you have already created this repository in your local machine, pulling it again may cause a loss of your information.*
 
 First, create a workspace:
 
 ```
 cd ~
-mkdir -p tidbots_ws/src
-cd tidbots_ws
+mkdir -p robovision_ros1_ws/src
+cd robovision_ros1_ws
 catkin_make
 ```
 
 Then, clone this repository into the src folder:
 
 ```
-cd ~/tidbots_ws/src
-git clone https://gitlab.com/trcp/robointro.git
+cd ~/robovision_ros1_ws/src
+git clone https://github.com/ARTenshi/robovision_ros1.git
 cd ..
 catkin_make
 ```
 
 # 1. ROS Publishers and Subcribers
 
-We asume the students have a notions on these subjects. If it is not the case, they can start here, for C++:
+We assume the students have a notion of these subjects. If it is not the case, they can start here, for C++:
 
 > http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
 
@@ -49,7 +49,7 @@ ROS_INFO("Starting image_publisher application...");
 ros::init(argc, argv, "image_publisher");
 ```
 
-Then, we need to create a **ROS handler** to tell the system what we intend to do and reserve the appropiate resources. Here, we give a unique name to each of our output topics, so anyone else can access to them without confusion. In this case, we name our output topic `camera/image`, as follows:
+Then, we need to create a **ROS handler** to tell the system what we intend to do and reserve the appropriate resources. Here, we give a unique name to each of our output topics, so anyone else can access them without confusion. In this case, we name our output topic `camera/image`, as follows:
 
 ```
 ros::NodeHandle nh;
@@ -64,7 +64,7 @@ Now, let's gather some data. We will open an image using OpenCV and then publish
 cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
 ```
 
-and we convert it to a **ROS message**, the type of data that can be send through the ROS framework:
+and we convert it to a **ROS message**, the type of data that can be sent through the ROS framework:
 
 ```
 sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
@@ -72,7 +72,7 @@ sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image
 
 Now we can publish this message. 
 
-We can do it once (`pub.publish(msg);`), but it means that the information will be only availabre a fraction of time, if you don't access to it at that very moment, you won't be able to use it anymore. So, let's publish it all the time! We first decide a frame rate, it is, the number of **frames per second** (fps). In general, we consider **real time** something around 30 fps. We use a `while` loop to publish our image at 30 Hz (i.e. 30 fps):
+We can do it once (`pub.publish(msg);`), but it means that the information will be only available for a fraction of time; if you don't access it at that very moment, you won't be able to use it anymore. So, let's publish it all the time! We first decide on a frame rate, which is the number of **frames per second** (fps). In general, we consider **real-time** something around 30 fps. We use a `while` loop to publish our image at 30 Hz (i.e. 30 fps):
 
 ```
 ros::Rate rate(30);
@@ -112,8 +112,8 @@ You should see something like:
 Now, in the same terminal, run the following commands:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/tidbots_ws/src/robointro/1_images/data/baboon.png
+source ~/robovision_ros1_ws/devel/setup.bash
+rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1_ws/data/images/baboon.png
 ```
 
 Then, again, in a new terminal, run this command:
@@ -140,13 +140,13 @@ Subscribers: None
 
 ```
 
-So, we can see that our topic is a *sensor_msgs/Image* data and that the *Publisher* correspond to the name we gave it when we started the node a few lines above `ros::init(argc, argv, "image_publisher");`. However, we don't have any *Subscriber* yet. Let's solve it in Section 1.3.
+So, we can see that our topic is a *sensor_msgs/Image* data and that the *Publisher* corresponds to the name we gave it when we started the node a few lines above `ros::init(argc, argv, "image_publisher");`. However, we don't have any *Subscriber* yet. Let's solve it in Section 1.3.
 
 ## 1.1.3 Homework 1.1
 
 * Add a new publisher in your code that publishes a scaled version by half of the original image.
 
-To give you an idea on how ROS works, we will help you to solve this task this time, but you are expected to solve it all by yourself.
+To give you an idea of how ROS works, we will help you to solve this task this time, but you are expected to solve it all by yourself.
 
 Do you remember our ROS handler? We need one handler per topic, so let's add a new one (don't forget to give a different and unique name to each topic, in this case, we named it `camera/image_2`):
 
@@ -156,7 +156,7 @@ image_transport::ImageTransport it2(nh2);
 image_transport::Publisher pub2 = it2.advertise("camera/image_2", 1);
 ```
 
-After a short search on internet, we found that, to scale an image in OpenCV, we can use the following command:
+After a short search on the internet, we found that, to scale an image in OpenCV, we can use the following command:
 
 ```
 cv::Mat image2;
@@ -169,7 +169,7 @@ Now, we need to publish our new image:
 sensor_msgs::ImagePtr msg2 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image2).toImageMsg();
 ```
 
-Finally, inside the while loop we publish our new message into our second topic ar 30fps:
+Finally, inside the while loop, we publish our new message into our second topic at 30fps:
 
 ```
 pub2.publish(msg2);
@@ -231,7 +231,7 @@ Now let's test it!
 First, we need to compile our code, in a new terminal run:
 
 ```
-cd ~/tidbots_ws
+cd ~/robovision_ros1_ws
 catkin_make
 ```
 
@@ -244,8 +244,8 @@ roscore
 Then, in a different terminal, run:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/tidbots_ws/src/robointro/1_images/data/baboon.png
+source ~/robovision_ros1_ws/devel/setup.bash
+rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1/data/images/baboon.png
 ```
 
 Finally, in a new terminal, run this command:
@@ -264,7 +264,7 @@ Have a look at the `my_video_publisher.cpp` file. This file presents the basic s
 
 We started our node and our ROS handler as before. Please note that we use the same name for the static image and the video publishers, so you can only use one of them at a time.
 
-Let's open our camera! Every camera connected to your computer has an ID number, starting from 0. If you have a laptop with an extra USB camera attached to it, the laptop's camera will have ID 0 and the USC camera ID 1, and so on. In any case, provide you have at least one camera cnnected to your computer, there will be a device with ID 0 and, therefore, the following lines should open it:
+Let's open our camera! Every camera connected to your computer has an ID number, starting from 0. If you have a laptop with an extra USB camera attached to it, the laptop's camera will have ID 0 and the USC camera ID 1, and so on. In any case, provided you have at least one camera connected to your computer, there will be a device with ID 0 and, therefore, the following lines should open it:
 
 ```
 int video_source = 0;
@@ -272,7 +272,7 @@ cv::VideoCapture cap(video_source);
 if(!cap.isOpened()) return 1;
 ```
 
-Now, we should notice that, unlike static images, video sequences change in time and therefore we should update our frame at a desired frame rate (depending on your device specifications). We first create a matrix to storage this information and then, in the while loop we update it. In general, a camera takes some time to start after you call it, so we need to wait until our program starts receiving a video stream (we use the `if(!frame.empty())` to do that). Ten, our code to read and publish camera images is:
+Now, we should notice that, unlike static images, video sequences change in time and therefore we should update our frame at a desired frame rate (depending on your device specifications). We first create a matrix to store this information and then, in the while loop, we update it. In general, a camera takes some time to start after you call it, so we need to wait until our program starts receiving a video stream (we use the `if(!frame.empty())` to do that). Ten, our code to read and publish camera images is:
 
 ```
 cv::Mat frame;
@@ -308,7 +308,7 @@ In a second terminal, run the next command:
 rostopic list
 ```
 
-You should see somhing like:
+You should see something like this:
 
 ```
 /rosout
@@ -318,7 +318,7 @@ You should see somhing like:
 Now, in the same terminal, run the following commands:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
+source ~/robovision_ros1_ws/devel/setup.bash
 rosrun introvision_images my_video_publisher
 ```
 
@@ -334,7 +334,7 @@ Can you explain the output? How do you get extra information from your topic?
 
 * Add a new publisher in your code that publishes a scaled version by half of the original video frame.
 
-**Hint** You sould start your new frame and message outside the while loop video but process them inside the loop.
+**Hint** You should start your new frame and message outside the while loop video but process them inside the loop.
 
 # 1.3 Image subscriber
 
@@ -350,7 +350,7 @@ As with any node in ROS, we need to start it and give it a unique name:
 ros::init(argc, argv, "image_listener");
 ```
 
-Now, again, we need to create a ROS handler for our subcriber. Here, we tell ROS which function will be calles every time a new image arrives:
+Now, again, we need to create a ROS handler for our subscriber. Here, we tell ROS which function will be called every time a new image arrives:
 
 ```
 ros::NodeHandle nh;
@@ -358,13 +358,13 @@ image_transport::ImageTransport it(nh);
 image_transport::Subscriber sub = it.subscribe("camera/image", 1, callback_image);
 ```
 
-That was easy... but now we need to create the callback function! The basic structure consist of a function's name and, as a parameter, the variable with the data type that will enter. In this case, our `msg` variable is of type `ImageConstPtr`:
+That was easy... but now we need to create the callback function! The basic structure consists of a function's name and, as a parameter, the variable with the data type that will be entered. In this case, our `msg` variable is of type `ImageConstPtr`:
 
 ```
 void callback_image(const sensor_msgs::ImageConstPtr& msg)
 ```
 
-Inside this function, we can process our data. The `try` and `catch` statementa in C++ are to prevent our program to break if an error occurs, but can be ommited. Therefore, let's focus on our callback function. We first need to transform our `ImageConstPtr` data in the `msg` variable to `cv::Mat`:
+Inside this function, we can process our data. The `try` and `catch` statements in C++ are to prevent our program from breaking if an error occurs, but can be omitted. Therefore, let's focus on our callback function. We first need to transform our `ImageConstPtr` data in the `msg` variable to `cv::Mat`:
 
 ```
 cv::Mat img;
@@ -395,9 +395,9 @@ Then, we have to create a subscriber to tell ROS which function we will use when
 rospy.Subscriber("camera/image", Image , callback_image)
 ```
 
-In the C++ example, we processed our new data inside the callback function. Intead, the Python example, we will use the callback to update a global variable that can be used later by any function in the scope. You can use any approach in both C++ and Python depending on the task at hand.
+In the C++ example, we processed our new data inside the callback function. Instead, in the Python example, we will use the callback to update a global variable that can be used later by any function in the scope. You can use any approach in both C++ and Python depending on the task at hand.
 
-So, in Python we declare our callback function only with the name of our message but we let the data type as an implicit value:
+So, in Python, we declare our callback function only with the name of our message but we let the data type as an implicit value:
 
 ```
 def callback_image(msg)
@@ -410,13 +410,13 @@ bridge_rgb=CvBridge()
 img = bridge_rgb.imgmsg_to_cv2(msg,msg.encoding).copy()
 ```
 
-and we let know Python that we have received out first message:
+and we let know Python that we have received our first message:
 
 ```
 is_img = True
 ```
 
-Finally, we use our image as a standard OpenCV variable inside our main function (do you remember why do we use a frequency of 30 Hz in the `rospy.Rate(30)` declaration?):
+Finally, we use our image as a standard OpenCV variable inside our main function (do you remember why we use a frequency of 30 Hz in the `rospy.Rate(30)` declaration?):
 
 ```
 loop=rospy.Rate(30)
@@ -440,14 +440,14 @@ roscore
 In a second terminal, run the next command:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/tidbots_ws/src/robointro/1_images/data/baboon.png
+source ~/robovision_ros1_ws/devel/setup.bash
+rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1/data/images/baboon.png
 ```
 
 Now, in a different terminal, run the following commands:
 
 ```
-source ~/tidbots_ws/devel/setup.bash
+source ~/robovision_ros1_ws/devel/setup.bash
 rosrun introvision_images my_subscriber
 ```
 
@@ -491,7 +491,7 @@ and declare your new callback function *callback_image_2*:
 void callback_image_2(const sensor_msgs::ImageConstPtr& msg)
 ```
 
-Similarly, in Python you need to subscribe to the new topic:
+Similarly, in Python, you need to subscribe to the new topic:
 
 ```
 rospy.Subscriber("camera/image_2", Image , callback_image_2)
@@ -507,6 +507,6 @@ In Python, don't forget to declare your new global variables!
 
 ## Authors
 
-* **Luis Contreras** - [AIBot](http://aibot.jp/)
+* **Luis Contreras** - [ARTenshi](https://artenshi.github.io/)
 * **Hiroyuki Okada** - [AIBot](http://aibot.jp/)
 
