@@ -1,6 +1,6 @@
 # An Introduction to Robot Vision
 
-We present a short introduction to Robot Vision. We first present the basic concepts of image publishers and subscribers in ROS and then we apply some basic commands to introduce the students to the digital image processing theory; finally, we present some RGBD and point cloud notions and applications.
+We present a short introduction to Robot Vision. We first present the basic concepts of image publishers and subscribers in ROS1 and then we apply some basic commands to introduce the students to the digital image processing theory; finally, we present some RGBD and point cloud notions and applications.
 
 # Prerequisites
 
@@ -86,7 +86,7 @@ rosrun introvision_images my_subscriber
 
 # Developing
 
-Basic concepts on ROS image publishers and subscribers can be found here:
+Basic concepts on ROS1 image publishers and subscribers can be found here:
 
 > [Lesson 1](https://github.com/ARTenshi/robovision_ros1/tree/main/1_images)
 
