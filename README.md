@@ -2,14 +2,15 @@
 
 We present a short introduction to Robot Vision. We first present the basic concepts of image publishers and subscribers in ROS1 and then we apply some basic commands to introduce the students to the digital image processing theory; finally, we present some RGBD and point cloud notions and applications.
 
+For a ROS2 version of this project, please refer to [here](https://github.com/ARTenshi/robovision_ros2).
+
 # Prerequisites
 
 Things that you need to install the software and how to install them
 
 ```
 You should have ROS1 installed.
-You should have OpenCV installed.
-You should have a working ROS workspace.
+You should have OpenCV for ROS1 installed.
 ```
 # Installation
 
@@ -21,7 +22,7 @@ Install git:
 sudo apt-get install git
 ```
 
-## 1. ROS Install:
+## 1. ROS1 Install:
 
 ### Ubuntu 20.04:
 
