@@ -55,9 +55,9 @@ git clone https://github.com/ARTenshi/robovision_ros2.git
 
 ### 2.2 Download additional data
 
-This project requires additional data files, available [here (Google Drive)](https://bit.ly/3PzJp5m).
+This project requires additional data files, available [here (Google Drive)](https://bit.ly/3WjWnI2).
 
-Download those files into the `~/robovision_ros1_ws/src/robovision_ros2/data/rosbags/` folder.
+Download those folders into the `~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/` folder.
 
 ### 2.3 Compile your code
 
