@@ -2,42 +2,27 @@
 
 We present an introduction to Point Cloud data in ROS and propose a simple task where the students should track a person moving in front of an RGBD camera mounted on a mobile robot.
 
-# 0. Get the robot vision libraries
+# 0. Get the additional data
 
-## 0.1 Clone this repository
+## 0.1 Rosbag data
 
-**Warning:** *You only need to do this once. If you have already created this repository in your local machine, pulling it again may cause a loss of your information.*
+Be sure that you have downloaded our additional data available [here (Google Drive)](https://bit.ly/3WjWnI2).
 
-First, create a workspace:
+Those folders should be in the `~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/` folder.
 
-```
-cd ~
-mkdir -p robovision_ros1_ws/src
-cd robovision_ros1_ws
-catkin_make
-```
-
-Then, clone this repository into the src folder:
+To be sure, let's test it. In one terminal run:
 
 ```
-cd ~/robovision_ros1_ws/src
-git clone [https://gitlab.com/trcp/robointro.git](https://github.com/ARTenshi/robovision_ros1.git)
-cd ..
-catkin_make
-```
-## 0.2 Extra packages and data
-
-Be sure that you have installed the `ros_numpy` package:
-
-```
-sudo apt-get install ros-$release-ros-numpy
+ros2 bag play ~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/person_static --loop
 ```
 
-where `$release` is your ROS version
+In a second terminal, run this command:
 
-Also, be sure that you have an RGBD camera or a rosbag containing RGBD data as the one provided in:
+```
+ros2 topic list
+```
 
-> ~/robovision_ros1_ws/src/robovision_ros1/data/rosbags/
+You should be able to see several topics!
 
 # 1. Getting to know your RGBD image
 
