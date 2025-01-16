@@ -2,29 +2,6 @@
 
 The goal of this repository is to introduce students to RGB image processing using OpenCV and ROS.
 
-# 0. Get the robot vision libraries
-
-## 0.1 Clone this repository
-
-**Warning:** *You only need to do this once. If you have already created this repository in your local machine, pulling it again may cause a loss of your information.*
-
-First, create a workspace:
-
-```
-cd ~
-mkdir -p robovision_ros1_ws/src
-cd robovision_ros1_ws
-catkin_make
-```
-
-Then, clone this repository into the src folder:
-
-```
-cd ~/robovision_ros1_ws/src
-git clone https://github.com/ARTenshi/robovision_ros1.git
-cd ..
-catkin_make
-```
 
 # 1. Getting to know your image
 
@@ -36,21 +13,20 @@ Before starting to manipulate images, we should understand what they are and how
 
 Each color channel has an integer value between 0 and 255. For example, a value of RGB = [255, 0, 0] represents the red color because the value red = 255 is the maximum possible while the green = 0 and blue = 0 values represent the absence of those color. Similarly, RGB = [0, 255, 0] represents the green color and RGB = [0, 0, 255] represents the blue color. The combination of these three channels with different intensities gives us our perception of true color (for example, if you combine different values of red and green you will obtain a range of tonalities of yellow, e.g. RGB = [128, 128, 0]).
 
+
 # 2. Basic operations
 
 From our previous tutorial, we learnt how to subscribe to a ROS Image topic
 
-```
-ros::NodeHandle nh;
-image_transport::ImageTransport it(nh);
-image_transport::Subscriber sub = it.subscribe("camera/image", 1, callback_image);
+```C++
+image_subscriber_ = this->create_subscription<sensor_msgs::msg::Image>(
+    "camera/image", 10, std::bind(&ImageProcessingNode::callback_image, this, std::placeholders::_1));
 ```
 
 and to transform our ROS Image message to an OpenCV matrix array:
 
 ```
-cv::Mat img;
-img = cv_bridge::toCvShare(msg, "bgr8")->image.clone();
+image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;
 ```
 
 ## 2.1 Image dimensions
@@ -330,6 +306,7 @@ A segmented image in the blue channel should look like
 ### Homework 2.3.2
 
 * Create five segmented images using different color ranges. From the previous unit, do you remember how to start an image publisher using you camera? Try using it and place objects with different colors in front of your camera and see what happens!
+
 
 # 3. Per-element operations
 
