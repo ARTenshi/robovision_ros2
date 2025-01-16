@@ -18,7 +18,7 @@ Each color channel has an integer value between 0 and 255. For example, a value 
 
 From our previous tutorial, we learnt how to subscribe to a ROS Image topic
 
-```C++
+```bash
 image_subscriber_ = this->create_subscription<sensor_msgs::msg::Image>(
     "camera/image", 10, std::bind(&ImageProcessingNode::callback_image, this, std::placeholders::_1));
 ```
