@@ -12,13 +12,13 @@ Those folders should be in the `~/robovision_ros2_ws/src/robovision_ros2/data/ro
 
 To be sure, let's test it. In one terminal run:
 
-```
+```bash
 ros2 bag play ~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/person_static --loop
 ```
 
 In a second terminal, run this command:
 
-```
+```bash
 ros2 topic list
 ```
 
@@ -30,13 +30,13 @@ In this lesson, we will apply all that we have learnt in the past two units. Fir
 
 In the main function we can see that, as we have done before, we first initialise our node
 
-```
+```python
 super().__init__("point_cloud_centroid")
 ```
 
 and then, we subscribe to the topics we are going to use:
 
-```
+```python
 self.rgb_subscriber_ = self.create_subscription(
     Image, "/camera/rgb/image_rect_color", self.callback_rgb_rect, 10)
 self.depth_subscriber_ = self.create_subscription(
@@ -59,13 +59,13 @@ The RGB image is a color image with three channels (Red, Green, and Blue), and t
 
 We have used an `Image` topic for RGB images before. The Depth image is a matrix of floats corresponding to the metric distance in milimeters. Therefore, in the callback function `callback_depth_rect` we read it as
 
-```
+```python
 self.depth_=bridge_depth.imgmsg_to_cv2(msg,"32FC1").copy()
 self.depth_mat_ = np.array(self.depth_, dtype=np.float32)
 ```
 As the values range from 400 (40 centimeters) to 10000 (10 meters), we normalize it to valid image values and save it in an image array to be able to display it
 
-```
+```python
 v2.normalize(self.depth_mat_, self.depth_, 0, 1, cv2.NORM_MINMAX)
 ```
 
@@ -73,7 +73,7 @@ v2.normalize(self.depth_mat_, self.depth_, 0, 1, cv2.NORM_MINMAX)
 
 Furthermore, from the RGB and Depth images, for every pixel in the image, we can obtain the metric XYZ position in the space -- we will not go further on this because, luckily, we see that ROS has already calculated it and the `/camera/depth_registered/points` of type `PointCloud2` provides this information. If you type
 
-```
+```bash
 ros2 interface show sensor_msgs/msg/PointCloud2
 ```
 
@@ -81,13 +81,13 @@ in a terminal, you can see the composition of this type of message.
 
 The point cloud message is a list of tuples (x, y, z, ...) in milimeters of the type `PointCloud2`. Therefore, in the callback function `callback_point_cloud` we read it as
 
-```
+```python
 self.point_cloud_ = np.array(list(pc2.read_points(msg, field_names=None, skip_nans=False)))
 ```
 
 This reads the point cloud as a list, so we reshape it as a matrix form aligned to our RGB image
 
-```
+```python
 if msg.height > 1:
     self.point_cloud_ = self.point_cloud_.reshape((msg.height, msg.width, -1))
     
@@ -97,7 +97,7 @@ if msg.height > 1:
 
 Back to our code, we see that we have a ROS publisher where we want to publish the 3D position of an object in front of our camera; remember that a topic should have a unique name -- in this case, we called it `/object_centroid` and is of the type `Pose`:
 
-```
+```python
 self.centroid_publisher_ = self.create_publisher(
     Pose, "/object_centroid", 10)
 ```
@@ -147,13 +147,13 @@ Please, inspect the `rgbd_reader.cpp` implementation. The structure is very simi
 
 Now, we will process this information in a timer function `point_cloud_processing`, in Python
 
-```
+```python
 self.processing_timer_ = self.create_timer(0.030, self.point_cloud_processing)
 ```
 
 and in C++
 
-```
+```cpp
 processing_timer_ = this->create_wall_timer(
     std::chrono::milliseconds(30),
     std::bind(&PointCloudCentroidNode::point_cloud_processing, this));
@@ -161,7 +161,7 @@ processing_timer_ = this->create_wall_timer(
 
 We access a single element in our array just as any array in Python `self.point_cloud_[row_id, col_id, 0]`. To access a single dimension X, Y, or Z, we can indicate it directly `self.point_cloud_[row_id, col_id, 0][XYZ]`, where XYZ=0 for the dimension X, XYZ=1 for the dimension Y, and XYZ=2 for the dimension Z. In our example, to access the 3D information in the central point of our image we enter
 
-```
+```python
 rows, cols, _= self.point_cloud_.shape
 row_id = int(rows/2)
 col_id = int(cols/2)
@@ -173,7 +173,7 @@ p = [float(self.point_cloud_[row_id, col_id, 0][0]),
 
 In C++, we access an element in out matrix as `point_cloud_.at<cv::Vec4f>(row_id, col_id)`, and each component as `point_cloud_.at<cv::Vec4f>(row_id, col_id)[XYZ]`, where XYZ=0 for the dimension X, XYZ=1 for the dimension Y, and XYZ=2 for the dimension Z
 
-```
+```cpp
 int rows = point_cloud_.rows;
 int cols = point_cloud_.cols;
 int row_id = rows / 2;
@@ -184,7 +184,7 @@ cv::Vec4f point = point_cloud_.at<cv::Vec4f>(row_id, col_id);
 
 Finally, we store it in our global variable to be published later in the program's main loop by our ROS publisher. In Python
 
-```
+```python
 self.centroid_=Pose()
 
 self.centroid_.position.x = p[0]
@@ -202,7 +202,7 @@ self.centroid_publisher_.publish(self.centroid_)
 
 and in C++
 
-```
+```cpp
 geometry_msgs::msg::Pose centroid;
 
 centroid.position.x = static_cast<float>(point[0]); // x
@@ -222,20 +222,20 @@ centroid_publisher_->publish(centroid);
 
 Now, let's try our code. So, run the following commands:
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 If you don't have an RGBD camera, don't worry, we provide you with a ROS bag with some data collected using an XTion Pro mounted at the top of a Turtlebot 2, at a height 1.0 meter from the floor. In a different terminal, run:
 
-```
+```bash
 ros2 bag play ~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/person_static --loop
 ```
 
 Then, in a different terminal enter
 
-```
+```bash
 ros2 topic list
 ```
 
@@ -243,14 +243,14 @@ Can you see all the different topics you can work with!?
 
 Now enter, for a Python implementation
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_rgbd rgbd_reader.py
 ```
 
 or, for C++ implementation
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_rgbd rgbd_reader
 ```
@@ -259,13 +259,13 @@ Can you see the 3D information of our middle point in the image?
 
 Finally, in a new terminal:
 
-```
+```bash
 ros2 topic info /object_centroid
 ```
 
 and, then 
 
-```
+```bash
 ros2 topic echo /object_centroid
 ```
 
@@ -315,14 +315,14 @@ Don't forget to use the appropriate signs, especially in the Y-axis, if the came
 
 You can convert those values to quaternion form by using the Python function
 
-```
+```python
 from tf_transformations import quaternion_from_euler
 quaternion = quaternion_from_euler(roll, pitch, yaw)
 ```
 
 and then store it in our variable
 
-```
+```python
 object_centroid.orientation.x = quaternion[0]
 object_centroid.orientation.y = quaternion[1]
 object_centroid.orientation.z = quaternion[2]
@@ -331,14 +331,14 @@ object_centroid.orientation.w = quaternion[3]
 
 Similarly, in C++
 
-```
+```cpp
 tf2::Quaternion quaternion;
 quaternion.setRPY(roll, pitch, yaw);
 ```
 
 and
 
-```
+```cpp
 centroid.orientation.x = quaternion.x();
 centroid.orientation.y = quaternion.y();
 centroid.orientation.z = quaternion.z();
