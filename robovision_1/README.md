@@ -2,6 +2,118 @@
 
 The goal of this repository is to introduce students to image publishers and subscribers using ROS2 and OpenCV.
 
+# 0 CMakeList.txt and package.xml
+
+When we build and install a package in ROS2, we need to give the compiler some information regarding names and libraries. This guide explains how to use the `CMakeLists.txt` and `package.xml` files to configure and build a package in ROS2.
+
+## 0.1 `package.xml`
+The `package.xml` file contains package metadata and dependency declarations.
+
+- **Key Sections**:
+  - `<name>`: Defines the package name (`robovision_images`).
+  - `<version>`: Specifies the package version.
+  - `<maintainer>`: Provides the maintainer and contact email.
+  - `<license>`: Placeholder for the license.
+  - `<buildtool_depend>`: Tools for building the package, such as `ament_cmake` and `ament_cmake_python`.
+  - `<depend>`: Runtime dependencies like `rclcpp`, `cv_bridge`, `sensor_msgs`, and `std_msgs`.
+  - `<test_depend>`: Dependencies for testing, such as `ament_lint_auto`.
+
+## 0.2 `CMakeLists.txt`
+The `CMakeLists.txt` file defines how the package is built.
+
+- **Key Components**:
+  - Specifies the minimum CMake version and compiler options.
+  - Locates dependencies (`rclcpp`, `cv_bridge`, `OpenCV`, etc.).
+  - Declares include directories for OpenCV and `cv_bridge`.
+  - Adds executables for C++ nodes like `my_publisher` and `my_camera_publisher` and links their dependencies.
+  - Installs Python scripts and C++ executables to the appropriate directories.
+  - Integrates the package with ROS2 using `ament_package()`.
+
+## 0.3 Example: `robovision_images` 
+
+### 0.3.1 `package.xml`
+
+We declare the name of our project
+
+```xml
+<name>robovision_images</name>
+```
+
+We are using both C++ and Python code in our project, and therefore, we need to declare it:
+
+```xml
+<buildtool_depend>ament_cmake</buildtool_depend>
+<buildtool_depend>ament_cmake_python</buildtool_depend>
+
+<depend>rclcpp</depend>
+<depend>rclpy</depend>
+```
+
+Additionally, we need to add all the ros-based dependencies we will use in our project
+
+```xml
+<depend>cv_bridge</depend>
+<depend>sensor_msgs</depend>
+<depend>std_msgs</depend>
+```
+
+### 0.3.2 `CMakeList.txt`
+
+First, we declare the name of our project
+
+```cmake
+project(robovision_images)
+```
+
+Similarly, we need to declare that we are using both C++ and Python code
+
+```cmake
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+find_package(rclcpp REQUIRED)
+```
+and the dependencies we are using
+
+```cmake
+find_package(OpenCV REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+```
+
+To build a project, we need to specify which files we want to compile and how we are going to refer them to our package. For C++ files, we declare them as in the example here
+
+```cmake
+add_executable(my_publisher src/my_publisher.cpp)
+ament_target_dependencies(my_publisher 
+    rclcpp 
+    cv_bridge 
+    sensor_msgs 
+    OpenCV
+)
+```
+
+and for Python, we use
+
+```cmake
+ament_python_install_package(${PROJECT_NAME})
+```
+
+Finally, we need to install them in our install folder to be able to source them later
+
+```cmake
+install(TARGETS
+  my_publisher
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(PROGRAMS
+  scripts/my_subscriber.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+```
+
+This is a brief introduction to how to use these files to configure your project. Please inspect those files in each section!
+
 # 1. ROS Publishers and Subcribers
 
 We assume the students have a notion of these subjects. If it is not the case, they can start here, for C++:
