@@ -34,6 +34,8 @@ robovision_interfaces/
     └── GetPointCenter.srv
 ```
 
+This folder is at the same level as any new ROS2 package in your project.
+
 ## Defining a Custom Message: `ObjectCentroid.msg`
 
 A custom message describes the data structure for topics. The `ObjectCentroid.msg` defines the centroid coordinates and an array:
@@ -54,9 +56,9 @@ where
 
 A custom service defines the structure of a request and a response. The `GetPointCenter.srv` file looks like this:
 
-```plaintext
-int64        x
-int64        y
+```
+int64          x
+int64          y
 ---
 ObjectCentroid point
 ```
@@ -66,8 +68,7 @@ where
 - **Request (`int64 x, y`)**: Accepts two integer inputs (e.g., pixel coordinates).
 - **Response (`ObjectCentroid point`)**: Returns the computed centroid as an `ObjectCentroid` message.
 
-The `---` separates the request and response parts of the service definition.
-
+The `---` separates the request and response parts of the service definition. Notice that, if the message is defined in the same package, the package name does not appear in the service or message definition. If the message is defined elsewhere, we have to specify it, e.g. `robovision_interfaces/msg/ObjectCentroid point`.
 
 ## Integrating the Interfaces into the Build System
 
@@ -91,476 +92,168 @@ and update the `package.xml` to declare dependencies:
 <exec_depend>rosidl_default_runtime</exec_depend>
 ```
 
-# 1. ROS Services
+# 2. ROS Service
 
-# 1.1 Static image publisher
+The main difference between a topic and a service is that, while a topic is working, a service works under request (that might save resources).
 
-Have a look at the `my_publisher.cpp` file. This file presents the basic structure to construct a **publisher** in ROS.
+Let's compare our "rgbd_reader" and our "robovision_service" files (both in C++ and Python). They are very similar! We have two main changes. First, we don't have a publisher, as it sends a response under request. Second, we don't have a timer, as it is not working indefinitely. Instead, we create a ROS2 service that enters a callback function when we call the service. In Python it is
 
-## 1.1.1 Create a publisher
-
-First, you need to create your **start your node** and give it a unique name:
-
-```
-ROS_INFO("Starting image_publisher application...");
-ros::init(argc, argv, "image_publisher");
-```
-
-Then, we need to create a **ROS handler** to tell the system what we intend to do and reserve the appropriate resources. Here, we give a unique name to each of our output topics, so anyone else can access them without confusion. In this case, we name our output topic `camera/image`, as follows:
-
-```
-ros::NodeHandle nh;
-image_transport::ImageTransport it(nh);
-image_transport::Publisher pub = it.advertise("camera/image", 1);
-
-```
-
-Now, let's gather some data. We will open an image using OpenCV and then publish it in our topic. First, we read the image:
-
-```
-cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
-```
-
-and we convert it to a **ROS message**, the type of data that can be sent through the ROS framework:
-
-```
-sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
-```
-
-Now we can publish this message. 
-
-We can do it once (`pub.publish(msg);`), but it means that the information will be only available for a fraction of time; if you don't access it at that very moment, you won't be able to use it anymore. So, let's publish it all the time! We first decide on a frame rate, which is the number of **frames per second** (fps). In general, we consider **real-time** something around 30 fps. We use a `while` loop to publish our image at 30 Hz (i.e. 30 fps):
-
-```
-ros::Rate rate(30);
-while (nh.ok())
-{
-	pub.publish(msg);
-
-	//Prepare ROS to publish the next message
-	ros::spinOnce();
-	rate.sleep();
-}
-```
-
-And that's it, we have our first ROS publisher. 
-
-## 1.1.2 Test your code
-
-Run the following command in a terminal:
-
-```
-roscore
-```
-
-In a second terminal, run the next command:
-
-```
-rostopic list
-```
-
-You should see something like:
-
-```
-/rosout
-/rosout_agg
-```
-
-Now, in the same terminal, run the following commands:
-
-```
-source ~/robovision_ros1_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1_ws/data/images/baboon.png
-```
-
-Then, again, in a new terminal, run this command:
-
-```
-rostopic list
-```
-
-Do you remember this line `image_transport::Publisher pub = it.advertise("camera/image", 1);`? Well, now we can see our topic `/camera/image`! Furthermore, we can get the details of it. If we enter the command:
-
-```
-rostopic info /camera/image
-```
-
-we can see:
-
-```
-Type: sensor_msgs/Image
-
-Publishers: 
- * /image_publisher
-
-Subscribers: None
-
-```
-
-So, we can see that our topic is a *sensor_msgs/Image* data and that the *Publisher* corresponds to the name we gave it when we started the node a few lines above `ros::init(argc, argv, "image_publisher");`. However, we don't have any *Subscriber* yet. Let's solve it in Section 1.3.
-
-## 1.1.3 Homework 1.1
-
-* Add a new publisher in your code that publishes a scaled version by half of the original image.
-
-To give you an idea of how ROS works, we will help you to solve this task this time, but you are expected to solve it all by yourself.
-
-Do you remember our ROS handler? We need one handler per topic, so let's add a new one (don't forget to give a different and unique name to each topic, in this case, we named it `camera/image_2`):
-
-```
-ros::NodeHandle nh2;
-image_transport::ImageTransport it2(nh2);
-image_transport::Publisher pub2 = it2.advertise("camera/image_2", 1);
-```
-
-After a short search on the internet, we found that, to scale an image in OpenCV, we can use the following command:
-
-```
-cv::Mat image2;
-cv::resize(image, image2, cv::Size(), 0.5, 0.5, CV_INTER_AREA);
-```
-
-Now, we need to publish our new image:
-
-```
-sensor_msgs::ImagePtr msg2 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image2).toImageMsg();
-```
-
-Finally, inside the while loop, we publish our new message into our second topic at 30fps:
-
-```
-pub2.publish(msg2);
-```
-
-Your code should look something like:
-
-```
-#include <ros/ros.h>
-#include <image_transport/image_transport.h>
-#include <cv_bridge/cv_bridge.h>
-
-#include <opencv2/highgui/highgui.hpp>
-
-int main(int argc, char** argv)
-{
-	//Start your ROS node
-	ROS_INFO("Starting image_publisher application...");
-	ros::init(argc, argv, "image_publisher");
-
-	//Create a handler for your ROS element
-	ros::NodeHandle nh;
-	image_transport::ImageTransport it(nh);
-	image_transport::Publisher pub = it.advertise("camera/image", 1);
-
-	//Create a handler for your next ROS element
-	ros::NodeHandle nh2;
-	image_transport::ImageTransport it2(nh2);
-	image_transport::Publisher pub2 = it2.advertise("camera/image_2", 1);
-
-	//Read the input data
-	cv::Mat image = cv::imread(argv[1], CV_LOAD_IMAGE_COLOR);
-
-	//Process  your input data
-	cv::Mat image2;
-	cv::resize(image, image2, cv::Size(), 0.5, 0.5, CV_INTER_AREA);
-
-	//Convert the output data into a ROS message format
-	sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image).toImageMsg();
-	sensor_msgs::ImagePtr msg2 = cv_bridge::CvImage(std_msgs::Header(), "bgr8", image2).toImageMsg();
-
-	//Let's publish our images at a frequency of 30 frames per second
-	ros::Rate rate(30);
-	while (nh.ok())
-	{
-		//Publish your messages in your ROS topics
-		pub.publish(msg);
-		pub2.publish(msg2);
-
-		//Prepare ROS to publish the next message
-		ros::spinOnce();
-		rate.sleep();
-	}
-}
-```
-
-Now let's test it!
-
-First, we need to compile our code, in a new terminal run:
-
-```
-cd ~/robovision_ros1_ws
-catkin_make
-```
-
-Now, run the following command:
-
-```
-roscore
-```
-
-Then, in a different terminal, run:
-
-```
-source ~/robovision_ros1_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1/data/images/baboon.png
-```
-
-Finally, in a new terminal, run this command:
-
-```
-rostopic list
-```
-
-What can you see? Please, explain.
-
-# 1.2 Video publisher
-
-Have a look at the `my_video_publisher.cpp` file. This file presents the basic structure to open a camera and create a **publisher** in ROS. Can you note the similarities and differences between static image and video publishers?
-
-## 1.2.1 Create a publisher
-
-We started our node and our ROS handler as before. Please note that we use the same name for the static image and the video publishers, so you can only use one of them at a time.
-
-Let's open our camera! Every camera connected to your computer has an ID number, starting from 0. If you have a laptop with an extra USB camera attached to it, the laptop's camera will have ID 0 and the USC camera ID 1, and so on. In any case, provided you have at least one camera connected to your computer, there will be a device with ID 0 and, therefore, the following lines should open it:
-
-```
-int video_source = 0;
-cv::VideoCapture cap(video_source);
-if(!cap.isOpened()) return 1;
-```
-
-Now, we should notice that, unlike static images, video sequences change in time and therefore we should update our frame at a desired frame rate (depending on your device specifications). We first create a matrix to store this information and then, in the while loop, we update it. In general, a camera takes some time to start after you call it, so we need to wait until our program starts receiving a video stream (we use the `if(!frame.empty())` to do that). Ten, our code to read and publish camera images is:
-
-```
-cv::Mat frame;
-sensor_msgs::ImagePtr msg;
-
-ros::Rate loop_rate(30);
-while (nh.ok())
-{
-	cap >> frame;
-
-	if(!frame.empty())
-	{
-		msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", frame).toImageMsg();
-		pub.publish(msg);
-	}
-
-	ros::spinOnce();
-	loop_rate.sleep();
-}
-```
-
-## 1.2.2 Test your code
-
-Run the following command in a terminal:
-
 ```
-roscore
+self.get_point_center_service_ = self.create_service(
+    GetPointCenter, "get_point_center", self.point_cloud_processing)
 ```
 
-In a second terminal, run the next command:
+and in C++
 
 ```
-rostopic list
+get_point_center_service_ = this->create_service<robovision_interfaces::srv::GetPointCenter>(
+    "get_point_center", 
+    std::bind(&PointCloudCentroidNode::point_cloud_processing, this, 
+	      std::placeholders::_1, std::placeholders::_2));
 ```
 
-You should see something like this:
+Notice that we need to declare the service type, in this case, we are using our custom interface `robovision_interfaces/srv/GetPointCenter`. Also, we changed the definition of our callback function to incorporate the `request` and `response`. Finally, also note that we need to fill our `response` and return it (instead of publishing the result in a custom topic).
 
-```
-/rosout
-/rosout_agg
-```
-
-Now, in the same terminal, run the following commands:
-
-```
-source ~/robovision_ros1_ws/devel/setup.bash
-rosrun introvision_images my_video_publisher
-```
+## 2.1 Test your code
 
-Then, again, in a new terminal, run this command:
+First, let's compile it
 
 ```
-rostopic list
+cd ~/robovision_ros2_ws
+colcon build
 ```
-
-Can you explain the output? How do you get extra information from your topic?
-
-## 1.2.3 Homework 1.2
-
-* Add a new publisher in your code that publishes a scaled version by half of the original video frame.
-
-**Hint** You should start your new frame and message outside the while loop video but process them inside the loop.
 
-# 1.3 Image subscriber
+and start it (don't forget to start your rosbag!)
 
-Now that we have a stream of images being published in ROS, let's do something with them. Have a look at the `my_subscriber.cpp` and `my_subscriber.py` files. The important part here are the **callback functions**. Again, review your concepts on ROS publishers and subscribers using the links provided before.
-
-## 1.3.1 Create a subscriber
-
-### C++
-
-As with any node in ROS, we need to start it and give it a unique name:
-
 ```
-ros::init(argc, argv, "image_listener");
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_services robovision_service
 ```
 
-Now, again, we need to create a ROS handler for our subscriber. Here, we tell ROS which function will be called every time a new image arrives:
+In a different terminal, enter
 
 ```
-ros::NodeHandle nh;
-image_transport::ImageTransport it(nh);
-image_transport::Subscriber sub = it.subscribe("camera/image", 1, callback_image);
+ros2 service list
 ```
 
-That was easy... but now we need to create the callback function! The basic structure consists of a function's name and, as a parameter, the variable with the data type that will be entered. In this case, our `msg` variable is of type `ImageConstPtr`:
+Can you see the service we just declared? Now enter
 
 ```
-void callback_image(const sensor_msgs::ImageConstPtr& msg)
+ros2 service type /get_point_center
 ```
 
-Inside this function, we can process our data. The `try` and `catch` statements in C++ are to prevent our program from breaking if an error occurs, but can be omitted. Therefore, let's focus on our callback function. We first need to transform our `ImageConstPtr` data in the `msg` variable to `cv::Mat`:
+What's the interface it is using? You can inspect it
 
 ```
-cv::Mat img;
-img = cv_bridge::toCvShare(msg, "bgr8")->image.clone();
+ros2 interfaces show robovision_interfaces/srv/GetPointCenter
 ```
 
-And then, we can use it with our standard OpenCV functions (don't forget the `cv::waitKey(30);` function to tell OpenCV to stop and show your images):
+Finally, let's call our service
 
 ```
-if (display)
-{
-	cv::imshow("view", img);
-	cv::waitKey(30);
-}
+ros2 service call /get_point_center robovision_interfaces/srv/GetPointCenter "{x: 320, y: 240}"
 ```
-
-### Python
 
-Similarly, in Python we first start our node and name it:
+What was the result?
 
-```
-rospy.init_node('image_listener', anonymous=True)
-```
+# 3. ROS Client
 
-Then, we have to create a subscriber to tell ROS which function we will use when a new message comes. However, unlike in C++, we do not need to declare a ROS handler in Python, so we create our subscriber as follows:
+In ROS2, clients are used to interact with services in a synchronous request-response manner. This tutorial will demonstrate how to implement and utilize a ROS2 client. The example involves a `PointCloudCentroidNode` that calls a service named `get_point_center` to compute the centroid of a 2D point.
 
-```
-rospy.Subscriber("camera/image", Image , callback_image)
-```
+## 3.1 Client in Python
 
-In the C++ example, we processed our new data inside the callback function. Instead, in the Python example, we will use the callback to update a global variable that can be used later by any function in the scope. You can use any approach in both C++ and Python depending on the task at hand.
+The `robovision_client.py` file demonstrates a ROS2 client implementation for interacting with the `GetPointCenter` service. Below, we break down its key components.
 
-So, in Python, we declare our callback function only with the name of our message but we let the data type as an implicit value:
+### 3.1.1 **Node Initialization**
 
-```
-def callback_image(msg)
-```
+The `PointCloudCentroidNode` class initializes a ROS2 node named `point_cloud_client`.
 
-We then transform our ROS message to an OpenCV array:
+```python
+self.declare_parameter("x", 320)
+self.declare_parameter("y", 240)
 
+self.x_ = self.get_parameter("x").value
+self.y_ = self.get_parameter("y").value
 ```
-bridge_rgb=CvBridge()
-img = bridge_rgb.imgmsg_to_cv2(msg,msg.encoding).copy()
-```
-
-and we let know Python that we have received our first message:
+Parameters `x` and `y` define the target coordinates to query from the service.
 
-```
-is_img = True
-```
+2. **Service Call Setup**
 
-Finally, we use our image as a standard OpenCV variable inside our main function (do you remember why we use a frequency of 30 Hz in the `rospy.Rate(30)` declaration?):
+A ROS2 timer is created to call the service periodically every 2.5 seconds:
 
+```python
+self.client_call_timer_ = self.create_timer(2.5, self.client_caller)
 ```
-loop=rospy.Rate(30)
-while not rospy.is_shutdown():
-	if is_img:
-		if(display):
-			cv2.imshow("view", img)
-			cv2.waitKey(1)
-
-		loop.sleep()
-``` 
 
-## 1.3.2 Test your code
+The `client_caller()` function prepares and sends a service request:
 
-Run the following command in a terminal:
-
-```
-roscore
+```python
+def client_caller(self):
+    self.call_get_point_center_server(self.x_, self.y_)
 ```
 
-In a second terminal, run the next command:
-
-```
-source ~/robovision_ros1_ws/devel/setup.bash
-rosrun introvision_images my_publisher ~/robovision_ros1_ws/src/robovision_ros1/data/images/baboon.png
-```
+3. **Creating the Client and Making a Request**
 
-Now, in a different terminal, run the following commands:
+A ROS2 client is created with the specified service type (`GetPointCenter`) and name (`get_point_center`):
 
+```python
+client = self.create_client(GetPointCenter, "get_point_center")
+while not client.wait_for_service(1.0):
+    self.get_logger().warn("Waiting for get_point_center service...")
 ```
-source ~/robovision_ros1_ws/devel/setup.bash
-rosrun introvision_images my_subscriber
-```
 
-What did happen?
+The request message is populated, and an asynchronous call is made:
 
-In a new terminal run this command:
+```python
+request = GetPointCenter.Request()
+request.x = _x
+request.y = _y
 
-```
-rostopic info /camera/image
+future = client.call_async(request)
+future.add_done_callback(
+    partial(self.callback_call_point_cloud, _x=request.x, _y=request.y))
 ```
 
-Now the output changed! Can you spot the difference?
+4. **Handling the Response**
 
-```
-type: sensor_msgs/Image
+The callback `callback_call_point_cloud()` processes the service response:
 
-Publishers: 
- * /image_publisher
+```python
+def callback_call_point_cloud(self, future, _x, _y):
+    try:
+        response = future.result()
+        self.get_logger().info(
+            "(" + str(_x) + ", " + str(_y) + ") position is: " + str(response.point))
 
-Subscribers: 
- * /image_listener
+        self.point_ = response.point
+    except Exception as e:
+        self.get_logger().error("Service call failed %r" % (e,))
 ```
 
-The `rostopic info` let us know that our *Image* topic `/camera/image` is being accessed by the node with name `/image_listener`... that's our node! Remember that we named our node `ros::init(argc, argv, "image_listener");` and that we subscribed to the `/camera/image` topic using the declaration `image_transport::Subscriber sub = it.subscribe("camera/image", 1, callback_image);`.
+---
 
-## 1.3.3 Homework 1.3
+## Running the Client
 
-* Create a second handler that subscribes to our second topic, the scaled input image, in the `/camera/image_2` topic, and display it.
+1. Ensure the `robovision_interfaces` package is built and sourced. This includes the `GetPointCenter` service definition.
 
-**Hint** In C++, you need to create a second ROS handler to subscribe to the selected topic:
+2. Run the client node:
 
+```bash
+ros2 run robovision_client robovision_client
 ```
-ros::NodeHandle nh2;
-image_transport::ImageTransport it2(nh2);
-image_transport::Subscriber sub2 = it2.subscribe("camera/image_2", 1, callback_image_2);
-```
-
-and declare your new callback function *callback_image_2*:
 
-```
-void callback_image_2(const sensor_msgs::ImageConstPtr& msg)
-```
+The client will periodically query the `get_point_center` service with the coordinates (`x`, `y`) and log the response.
 
-Similarly, in Python, you need to subscribe to the new topic:
+---
 
-```
-rospy.Subscriber("camera/image_2", Image , callback_image_2)
-```
+## Key Takeaways
 
-and define your new callback function *callback_image_2*:
+- A **ROS2 client** enables nodes to request actions or data from a **ROS2 service**.
+- Asynchronous callbacks ensure non-blocking execution while waiting for responses.
+- Proper error handling and logging improve robustness and debugging ease.
 
-```
-def callback_image_2(msg):
-```
+By understanding the client-server interaction shown in this example, you can build your custom ROS2 clients tailored to your application's needs.
 
-In Python, don't forget to declare your new global variables!
 
 ## Authors
 
