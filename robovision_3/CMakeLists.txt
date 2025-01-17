@@ -17,6 +17,9 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
 include_directories(${cv_bridge_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
 
 # C++ section
@@ -27,6 +30,8 @@ ament_target_dependencies(rgbd_reader
     sensor_msgs 
     geometry_msgs
     OpenCV
+    tf2
+    tf2_geometry_msgs
 )
 
 # Python section
