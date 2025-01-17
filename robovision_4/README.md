@@ -192,7 +192,7 @@ def client_caller(self):
     self.call_get_point_center_server(self.x_, self.y_)
 ```
 
-Every time we want to call our service, we use this function. We will explain this function next.
+Every time we want to call our service, we use this function so, you can use it as a template. We will explain it next.
 
 #### **Creating the Client and Making a Request**
 
@@ -272,7 +272,7 @@ client_call_timer_ = this->create_wall_timer(
     std::bind(&PointCloudCentroidNode::client_caller, this));
 ```
 
-The client_caller function calls a `get_point_center()` function. A major difference with Python is that we need to call our serves in a thread, so the program flow can continue:
+The client_caller function calls a `get_point_center()` function; we use this structure as a template. A major difference with Python is that we need to call our serves in a thread, so the program flow can continue:
 
 ```cpp
 threads_.push_back(std::thread(std::bind(&PointCloudCentroidNode::call_get_point_center_server, this, x, y)));
