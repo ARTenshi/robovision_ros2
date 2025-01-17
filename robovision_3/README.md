@@ -31,18 +31,21 @@ In this lesson, we will apply all that we have learnt in the past two units. Fir
 In the main function we can see that, as we have done before, we first initialise our node
 
 ```
-rospy.init_node('rgbd_reader', anonymous=True)
+super().__init__("point_cloud_centroid")
 ```
 
-an then we subscribe to the topics we are going to use:
+and then, we subscribe to the topics we are going to use:
 
 ```
-rospy.Subscriber("/camera/rgb/image_rect_color", Image , callback_rgb_rect)
-rospy.Subscriber("/camera/depth_registered/image", Image, callback_depth_rect)
-rospy.Subscriber("/camera/depth_registered/points", PointCloud2, callback_point_cloud)
+self.rgb_subscriber_ = self.create_subscription(
+    Image, "/camera/rgb/image_rect_color", self.callback_rgb_rect, 10)
+self.depth_subscriber_ = self.create_subscription(
+    Image, "/camera/depth_registered/image", self.callback_depth_rect, 10)
+self.point_cloud_subscriber_ = self.create_subscription(
+    PointCloud2, "/camera/depth_registered/points", self.callback_point_cloud, 10)
 ```
 
-We subscribe to three topics: an **RGB** and **Depth** images and a **Point Cloud** of 3D points, all of them come from the same RGBD sensor
+Here, you can notice the relevance of having our subscribers' callback functions to update our variables at different rates and a different timer function to process that information. In this case, we subscribe to three topics: an **RGB** and **Depth** images and a **Point Cloud** of 3D points, all of them come from the same RGBD sensor
 
 <p align="center">
   <img src="images/rgbd_view.jpg" width="800">
@@ -57,29 +60,46 @@ The RGB image is a color image with three channels (Red, Green, and Blue), and t
 We have used an `Image` topic for RGB images before. The Depth image is a matrix of floats corresponding to the metric distance in milimeters. Therefore, in the callback function `callback_depth_rect` we read it as
 
 ```
-depth_img=bridge_depth.imgmsg_to_cv2(msg,"32FC1").copy()
-depth_mat = np.array(depth_img, dtype=np.float32)
+self.depth_=bridge_depth.imgmsg_to_cv2(msg,"32FC1").copy()
+self.depth_mat_ = np.array(self.depth_, dtype=np.float32)
 ```
 As the values range from 400 (40 centimeters) to 10000 (10 meters), we normalize it to valid image values and save it in an image array to be able to display it
 
 ```
-cv2.normalize(depth_mat, depth_img, 0, 1, cv2.NORM_MINMAX)
+v2.normalize(self.depth_mat_, self.depth_, 0, 1, cv2.NORM_MINMAX)
 ```
+
+**Important:** the Depth information comes from a structured infrared light sensor and therefore very reflective or transparent surfaces tend to distort the depth information; those points appear as black (zero values) pixels in our depth image. The minimum distance our RGBD sensor is able to read is 40 cm, anything closer to that will be a zero value, as well.
 
 Furthermore, from the RGB and Depth images, for every pixel in the image, we can obtain the metric XYZ position in the space -- we will not go further on this because, luckily, we see that ROS has already calculated it and the `/camera/depth_registered/points` of type `PointCloud2` provides this information. If you type
 
 ```
-rosmsg info sensor_msgs/PointCloud2
+ros2 interface show sensor_msgs/msg/PointCloud2
 ```
 
 in a terminal, you can see the composition of this type of message.
 
-**Important:** the Depth information comes from a structured infrared light sensor and therefore very reflective or transparent surfaces tend to distort the depth information; those points appear as black (zero values) pixels in our depth image. The minimum distance our RGBD sensor is able to read is 40 cm, anything closer to that will be a zero value, as well.
+The point cloud message is a list of tuples (x, y, z, ...) in milimeters of the type `PointCloud2`. Therefore, in the callback function `callback_point_cloud` we read it as
+
+```
+self.point_cloud_ = np.array(list(pc2.read_points(msg, field_names=None, skip_nans=False)))
+```
+
+This reads the point cloud as a list, so we reshape it as a matrix form aligned to our RGB image
+
+```
+if msg.height > 1:
+    self.point_cloud_ = self.point_cloud_.reshape((msg.height, msg.width, -1))
+    
+    rows, cols, _ = self.point_cloud_.shape
+    print ('new message has arrived; point cloud size: rows: {}, cols: {}'.format(rows, cols))
+```
 
 Back to our code, we see that we have a ROS publisher where we want to publish the 3D position of an object in front of our camera; remember that a topic should have a unique name -- in this case, we called it `/object_centroid` and is of the type `Pose`:
 
 ```
-pub_centroid=rospy.Publisher('/object_centroid', Pose, queue_size=1)
+self.centroid_publisher_ = self.create_publisher(
+    Pose, "/object_centroid", 10)
 ```
 
 A Pose message is a geometry_msgs type that consists of a 3D position in meters and a 4D orientation in quaternion form of every point in the space with respect to the center of the camera:
@@ -116,66 +136,142 @@ and the XZ axes (top view) and the `YAW` angle of a point `p` on the plane are:
   <img src="images/xz_view.jpg" width="500">
 </p>
 
+### Homework 1.1
+
+Please, inspect the `rgbd_reader.cpp` implementation. The structure is very similar in C++ and Python, so you can use any of them, depending on your requirements.
+
 
 # 2. Point Cloud's manipulation
 
-For ease, we will only provide the code in Python for this unit. The interested reader can program their C++ version.
+For ease, we will only provide the code in Python and C++ for this unit. 
 
 ## 2.1 Single element access
 
-Our subscriber  to the `/camera/depth_registered/points` calls the `callback_point_cloud` function. There, we show how to access a single element. We first read our message `msg` of type `PointCloud2` and convert it to a Python array with the function 
+Our subscriber  to the `/camera/depth_registered/points` calls the `callback_point_cloud` function. There, we show how to access a single element. We first read our message `msg` of type `PointCloud2` and convert it to a Python array
 
 ```
-pc = ros_numpy.numpify(msg)
+self.point_cloud_ = self.point_cloud_.reshape((msg.height, msg.width, -1))
 ```
 
-As we mentioned before, the point cloud contains the 3D position in the space of EACH pixel, and therefore the dimensions of our array are the same as de dimensions of our image
+and a cv::Mat in C++
 
 ```
-rows, cols = pc.shape
-print ('point cloud size: rows: {}, cols: {}'.format(rows, cols))
+point_cloud_ = cv::Mat(msg->height, msg->width, CV_32FC4);
+const uint8_t *data_ptr = msg->data.data();
+
+for (size_t i = 0; i < msg->height; ++i) {
+    for (size_t j = 0; j < msg->width; ++j) {
+        const float *point = reinterpret_cast<const float*>(data_ptr + (i * msg->row_step + j * msg->point_step));
+        point_cloud_.at<cv::Vec4f>(i, j) = cv::Vec4f(point[0], point[1], point[2], point[3]);
+    }
+}
 ```
 
-We access a single element in our array just as any array in Python `mat[row_id][col_id]`. To access a single dimension X, Y, or Z, we can indicate it directly `mat[row_id][col_id][XYZ]`, where XYZ=0 for the dimension X, XYZ=1 for the dimension Y, and XYZ=2 for the dimension Z. In our example, to access the 3D information in the central point of our image we enter
+As we mentioned before, the point cloud contains the 3D position in the space of EACH pixel, and therefore the dimensions of our array are the same as de dimensions of our image in Python
 
 ```
-row_id = rows/2 
-col_id = cols/2 
-
-p = [pc[row_id][col_id][0], pc[row_id][col_id][1], pc[row_id][col_id][2]]
-```
-Finally, we store it in our global variable to be published later in the program's main loop by our ROS publisher
-
-```
-pub_centroid.publish(object_centroid)
+rows, cols, _ = self.point_cloud_.shape
+print ('new message has arrived; point cloud size: rows: {}, cols: {}'.format(rows, cols))
 ```
 
-Now, let's try our code. We don't need to compile our code in Python. So, run the following command:
+and C++
 
 ```
-roscore
+RCLCPP_INFO(this->get_logger(), "Point cloud converted to cv::Mat with size [%d, %d]", msg->height, msg->width);
+```
+
+We access a single element in our array just as any array in Python `self.point_cloud_[row_id, col_id, 0]`. To access a single dimension X, Y, or Z, we can indicate it directly `self.point_cloud_[row_id, col_id, 0][XYZ]`, where XYZ=0 for the dimension X, XYZ=1 for the dimension Y, and XYZ=2 for the dimension Z. In our example, to access the 3D information in the central point of our image we enter
+
+```
+rows, cols, _= self.point_cloud_.shape
+row_id = int(rows/2)
+col_id = int(cols/2)
+
+p = [float(self.point_cloud_[row_id, col_id, 0][0]), 
+     float(self.point_cloud_[row_id, col_id, 0][1]), 
+     float(self.point_cloud_[row_id, col_id, 0][2])]
+```
+
+In C++, we access an element in out matrix as `point_cloud_.at<cv::Vec4f>(row_id, col_id)`, and each component as `point_cloud_.at<cv::Vec4f>(row_id, col_id)[XYZ]`, where XYZ=0 for the dimension X, XYZ=1 for the dimension Y, and XYZ=2 for the dimension Z
+
+```
+int rows = point_cloud_.rows;
+int cols = point_cloud_.cols;
+int row_id = rows / 2;
+int col_id = cols / 2;
+
+cv::Vec4f point = point_cloud_.at<cv::Vec4f>(row_id, col_id);
+```
+
+Finally, we store it in our global variable to be published later in the program's main loop by our ROS publisher. In Python
+
+```
+self.centroid_=Pose()
+
+self.centroid_.position.x = p[0]
+self.centroid_.position.y = p[1]
+self.centroid_.position.z = p[2]
+
+self.centroid_.orientation.x=0.0
+self.centroid_.orientation.y=0.0
+self.centroid_.orientation.z=0.0
+self.centroid_.orientation.w=1.0
+
+#Publish centroid pose
+self.centroid_publisher_.publish(self.centroid_)
+```
+
+and in C++
+
+```
+geometry_msgs::msg::Pose centroid;
+
+centroid.position.x = static_cast<float>(point[0]); // x
+centroid.position.y = static_cast<float>(point[1]); // y
+centroid.position.z = static_cast<float>(point[2]); // z
+
+centroid.orientation.x = 0.0;
+centroid.orientation.y = 0.0;
+centroid.orientation.z = 0.0;
+centroid.orientation.w = 1.0;
+
+// Publish the centroid pose
+centroid_publisher_->publish(centroid);
+```
+
+Now, let's try our code. So, run the following commands:
+
+```
+cd ~/robovision_ros2_ws
+colcon build
 ```
 
 If you don't have an RGBD camera, don't worry, we provide you with a ROS bag with some data collected using an XTion Pro mounted at the top of a Turtlebot 2, at a height 1.0 meter from the floor. In a different terminal, run:
 
-
 ```
-rosbag play -l ~/robovision_ros1_ws/src/robovision_ros1/data/rosbags/person_static.bag
+ros2 bag play ~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/person_static --loop
 ```
 
 Then, in a different terminal enter
 
 ```
-rostopic list
+ros2 topic list
 ```
 
 Can you see all the different topics you can work with!?
 
-Now enter
+Now enter, for a Python implementation
 
 ```
-source ~/robovision_ros1_ws/devel/setup.bash
-rosrun introvision_rgbd rgbd_reader.py
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_rgbd rgbd_reader.py
+```
+
+or, for C++ implementation
+
+```
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_rgbd rgbd_reader
 ```
 
 Can you see the 3D information of our middle point in the image?
@@ -183,7 +279,13 @@ Can you see the 3D information of our middle point in the image?
 Finally, in a new terminal:
 
 ```
-rostopic echo /object_centroid
+ros2 topic info /object_centroid
+```
+
+and, then 
+
+```
+ros2 topic echo /object_centroid
 ```
 
 You should be able to see the same information being published in our ROS topic!
@@ -192,7 +294,7 @@ You should be able to see the same information being published in our ROS topic!
 
 * Provide the 3D position of five different points in our image (enter different row_id, and col_id). Can you see how the X, Y, and Z values change with respect to the central point? X is positive to the right of our middle point and Y is positive below the middle point.
 
-* What's the 3D information for point (row_id=0, col_id=0)? Please note that, when the information is not available for a given point due to the structured light reflection properties, the system returns 'nan' values. In Python you can check if a variable is `nan` with the `math.isnan(x)` function in the `math` library -- this function returns a `True` or `False` value. You can validate your data using the `if ( not math.isnan(pc[row_id][col_id][0]) ):` structure, for example.
+* What's the 3D information for point (row_id=0, col_id=0)? Please note that, when the information is not available for a given point due to the structured light reflection properties, the system returns 'nan' values. In Python you can check if a variable is `nan` with the `math.isnan()` function in the `math` library -- this function returns a `True` or `False` value. You can validate your data using the `if ( not math.isnan(( self.point_cloud_[row_id, col_id, 0][0] ) ):` structure, for example. Similarly, in C++ we have `std::isnan()`.
 
 # 3. Final project
 
@@ -208,7 +310,7 @@ In other words, we want to find the 3D position of person_1
 
 How can you do it?
 
-You can use the `person_static.bag` and the `person_dynamic.bag` ROS bags in the `~/robovision_ros1_ws/src/robovision_ros1/data/rosbags/` folder if you don't have an RGBD camera.
+You can use the `person_static` and the `person_dynamic` ROS bags in the `~/robovision_ros2_ws/src/robovision_ros2/data/rosbags/` folder if you don't have an RGBD camera.
 
 **Hint** Remember that the Point Cloud returns all the 3D information of all points visible by the camera, so why not limit it? You can create a valid zone where you can track your person better without any extra information
 
@@ -233,7 +335,8 @@ Don't forget to use the appropriate signs, especially in the Y-axis, if the came
 You can convert those values to quaternion form by using the Python function
 
 ```
-quaternion = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
+from tf_transformations import quaternion_from_euler
+quaternion = quaternion_from_euler(roll, pitch, yaw)
 ```
 
 and then store it in our variable
@@ -245,7 +348,23 @@ object_centroid.orientation.z = quaternion[2]
 object_centroid.orientation.w = quaternion[3]
 ```
 
-Good luck!
+Similarly, in C++
+
+```
+tf2::Quaternion quaternion;
+quaternion.setRPY(roll, pitch, yaw);
+```
+
+and
+
+```
+centroid.orientation.x = quaternion.x();
+centroid.orientation.y = quaternion.y();
+centroid.orientation.z = quaternion.z();
+centroid.orientation.w = quaternion.w();
+```
+
+Now, try implementing it in Python and C++. Good luck!
 
 ### Challenge 3.1
 
