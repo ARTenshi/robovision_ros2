@@ -247,7 +247,7 @@ and start our service (don't forget to start your rosbag!)
 
 ```bash
 source ~/robovision_ros2_ws/install/setup.bash
-ros2 run robovision_services robovision_service
+ros2 run robovision_services robovision_service.py
 ```
 
 In a different terminal, enter
@@ -259,6 +259,85 @@ ros2 run robovision_services robovision_client.py
 
 What was the result?
 
+
+## 3.2 Client in C++
+
+The `robovision_client.cpp` file provides an equivalent implementation of the ROS2 client in C++. Below are the highlights and key differences from the Python example.
+
+As in our Python implementation, we create a timer to show that we can call our service at any moment:
+
+```cpp
+client_call_timer_ = this->create_wall_timer(
+    std::chrono::milliseconds(2500),
+    std::bind(&PointCloudCentroidNode::client_caller, this));
+```
+
+The client_caller function calls a `get_point_center()` function. A major difference with Python is that we need to call our serves in a thread, so the program flow can continue:
+
+```cpp
+threads_.push_back(std::thread(std::bind(&PointCloudCentroidNode::call_get_point_center_server, this, x, y)));
+```
+
+The `call_get_point_center_server` in our thread works as in our Python implementation. A C++ client is created with the service type `robovision_interfaces::srv::GetPointCenter` and name `get_point_center`:
+
+```cpp
+auto client = this->create_client<robovision_interfaces::srv::GetPointCenter>("get_point_center");
+while (!client->wait_for_service(std::chrono::seconds(1))) {
+    RCLCPP_WARN(this->get_logger(), "Waiting for get_point_center service...");
+}
+```
+
+The request is constructed and sent asynchronously:
+
+```cpp
+auto request = std::make_shared<robovision_interfaces::srv::GetPointCenter::Request>();
+request->x = x;
+request->y = y;
+
+auto future = client->async_send_request(request);
+```
+
+The response from the service is processed synchronously by waiting for the future object:
+
+```cpp
+try {
+    auto response = future.get();
+    RCLCPP_INFO(this->get_logger(),
+                "(%d, %d) position is: [%f, %f, %f]",
+                x, y, response->point.centroid[0],
+                response->point.centroid[1],
+                response->point.centroid[2]);
+
+    point_ = response->point.centroid;
+} catch (const std::exception &e) {
+    RCLCPP_ERROR(this->get_logger(), "Service call failed.");
+}
+```
+
+### 3.2.1 Test your code
+
+First, let's compile it
+
+```bash
+cd ~/robovision_ros2_ws
+colcon build
+```
+
+and start our service (don't forget to start your rosbag!)
+
+```bash
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_services robovision_service
+```
+
+In a different terminal, enter
+
+```bash
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_services robovision_client
+```
+
+What was the result?
 
 ## Authors
 
