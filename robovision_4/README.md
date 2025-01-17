@@ -1,40 +1,96 @@
-# Image Publishers and Subscribers in ROS
+# Services and Clients in ROS
 
-The goal of this repository is to introduce students to image publishers and subscribers using ROS and OpenCV.
+In ROS2, clients and services enable synchronous communication between nodes. Unlike publishers and subscribers, which facilitate continuous data streams, clients and services are designed for request-response interactions. A client node sends a request to a service, and the service node processes the request and sends back a response. This is ideal for tasks that require specific actions or immediate feedback, such as controlling a robot arm or querying a sensor's state.
 
-# 0. Get the robot vision libraries
+You can check some basic concepts for C++:
 
-## 0.1 Clone this repository
+> https://docs.ros.org/en/foxy/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Cpp-Service-And-Client.html
 
-**Warning:** *You only need to do this once. If you have already created this repository in your local machine, pulling it again may cause a loss of your information.*
+and for Python:
 
-First, create a workspace:
+> https://docs.ros.org/en/foxy/Tutorials/Beginner-Client-Libraries/Writing-A-Simple-Cpp-Service-And-Client.html
+
+# 1. ROS2 Interfaces
+
+In ROS2, interfaces allow nodes to communicate using predefined data structures. Interfaces come in two forms:
+- **Messages (`msg`)**: Define the structure of data for topics.
+- **Services (`srv`)**: Define request-response interactions for services.
+
+This tutorial uses examples from the `robovision_interfaces` package to demonstrate creating and using ROS2 interfaces.
+
+---
+
+## Setting Up the Package
+
+Organize the folder structure for your custom interfaces as follows:
+```
+robovision_interfaces/
+├── CMakeLists.txt
+├── package.xml
+├── msg/
+│   └── ObjectCentroid.msg
+└── srv/
+    └── GetPointCenter.srv
+```
+
+## Defining a Custom Message: `ObjectCentroid.msg`
+
+A custom message describes the data structure for topics. The `ObjectCentroid.msg` defines the centroid coordinates and an array:
 
 ```
-cd ~
-mkdir -p robovision_ros1_ws/src
-cd robovision_ros1_ws
-catkin_make
+float64   x
+float64   y
+float64   z
+float64[] centroid
 ```
 
-Then, clone this repository into the src folder:
+where 
 
+- **`float64 x, y, z`**: Represent the 3D coordinates of the centroid.
+- **`float64[] centroid`**: A dynamic array to store additional data points.
+
+## Defining a Custom Service: `GetPointCenter.srv`
+
+A custom service defines the structure of a request and a response. The `GetPointCenter.srv` file looks like this:
+
+```plaintext
+int64        x
+int64        y
+---
+ObjectCentroid point
 ```
-cd ~/robovision_ros1_ws/src
-git clone https://github.com/ARTenshi/robovision_ros1.git
-cd ..
-catkin_make
+
+where
+
+- **Request (`int64 x, y`)**: Accepts two integer inputs (e.g., pixel coordinates).
+- **Response (`ObjectCentroid point`)**: Returns the computed centroid as an `ObjectCentroid` message.
+
+The `---` separates the request and response parts of the service definition.
+
+
+## Integrating the Interfaces into the Build System
+
+Update the `CMakeLists.txt` to include the message and service definitions:
+
+```cmake
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/ObjectCentroid.msg"
+  "srv/GetPointCenter.srv"
+)
+
+ament_export_dependencies(rosidl_default_runtime)
 ```
 
-# 1. ROS Publishers and Subcribers
+and update the `package.xml` to declare dependencies:
 
-We assume the students have a notion of these subjects. If it is not the case, they can start here, for C++:
+```xml
+<build_depend>rosidl_default_generators</build_depend>
+<exec_depend>rosidl_default_runtime</exec_depend>
+```
 
-> http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28c%2B%2B%29
-
-and here, for Python:
-
-> http://wiki.ros.org/ROS/Tutorials/WritingPublisherSubscriber%28python%29
+# 1. ROS Services
 
 # 1.1 Static image publisher
 
