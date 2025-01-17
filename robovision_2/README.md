@@ -18,27 +18,27 @@ Each color channel has an integer value between 0 and 255. For example, a value 
 
 From our previous tutorial, we learnt how to subscribe to a ROS Image topic in C++:
 
-```
+```cpp
 image_subscriber_ = this->create_subscription<sensor_msgs::msg::Image>(
     "camera/image", 10, std::bind(&ImageProcessingNode::callback_image, this, std::placeholders::_1));
 ```
 
 and to transform our ROS Image message to an OpenCV matrix array:
 
-```
+```cpp
 image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;
 ```
 
 In Python, to create an Image subscribe:
 
-```
+```python
 self.subscriber_ = self.create_subscription(
     Image, "camera/image", self.callback_camera_image, 10)
 ```
 
 and to convert it to a matrix array:
 
-```
+```python
 bridge_rgb=CvBridge()
 self.img = bridge_rgb.imgmsg_to_cv2(msg,msg.encoding).copy()
 ```
@@ -49,7 +49,7 @@ self.img = bridge_rgb.imgmsg_to_cv2(msg,msg.encoding).copy()
 
 Have a look at the `my_processing.cpp` file. Let's inspect our image. First, let's see the dimensions of our image (we add a `counter_` index so we print get these values only in the first iteration):
 
-```
+```cpp
 if (counter_ == 0)
     std::cout << "size: rows: " << image_.rows << 
                  ", cols: " << image_.cols << 
@@ -58,21 +58,21 @@ if (counter_ == 0)
 
 Let's test our code. First, we need to compile our code:
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 Now, as in our previous examples, run:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_publisher ~/robovision_ros2_ws/src/robovision_ros2/data/images/baboon.png
 ```
 
 Finally, in a new terminal, run this command:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_processing my_processing
 ```
@@ -83,7 +83,7 @@ where we should be able to see information regarding our image's size.
 
 Have a look at the `my_processing.py` file. Similarly, we first determine the dimensions of our image. In Python, we use the `shape` operator in our matrices, it returns three values (the number of rows, columns and channels) for color images and two values (rows and columns) for grayscale images. So you can use the length of this vector to determine if your image is a multi- or single-channel array.
 
-```
+```python
 if (self.counter == 0):
     (rows,cols,channels) = self.img.shape #Check the size of your image
     print ('size: rows: {}, cols: {}, channels: {}'.format(rows, cols, channels))
@@ -91,21 +91,21 @@ if (self.counter == 0):
 
 Now, let's try our code. In a pure Python project, we can build our code using the `--symlink-install` flag once and test modifications of our file without the need to build it again; however, in this project, we mix C++ and Python code, so we need to build it every time we make any modification. So, run the following command:
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 Teen, we run:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_publisher ~/robovision_ros2_ws/src/robovision_ros2/data/images/baboon.png
 ```
 
 Finally, in a new terminal:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_processing my_processing.py
 ```
@@ -128,7 +128,7 @@ To understand how an image is coded in OpenCV, play around with the `cv::Point` 
 
 On the other hand, the CV_RGB(red, green, blue) parameter determines our text's color. Remember that a single color channel ranges from 0 to 255, so try different red, green, and blue combinations and see all the colors you can create!
 
-```
+```cpp
 cv::putText(image_,
 	std::to_string(counter_),
 	cv::Point(25, 25), //change these values cv::Point(col_id, row_id)
@@ -144,7 +144,7 @@ Compile and test your code as in the previous section.
 
 Likewise, we use the `cv2.putText` function to add a text string into our `img` array. The two dimensional vector (col_id, row_id) marks the origin (bottom-left) of our text box. The three dimensional vector indicates our text's color. However, in Python **the order of our color channels is (blue, green, red)**. Be aware of this difference when you work with C++ and Python at the same time. Now, give different values to the color vector and see how to behave.
 
-```
+```python
 cv2.putText(self.img, 
 	str(self.counter),
 	(25,25), 
@@ -183,14 +183,14 @@ and it has the same value in its three channels, i.e. RGB = [Gray, Gray, Gray]. 
 
 Please complete the provided code with the following instructions as appropriate. We first create a new matrix `image_gray` and apply the OpenCV `cvtColor` function to our original `image_` image:
 
-```
+```cpp
 cv::Mat image_gray;
 cv::cvtColor(image_, image_gray, CV_BGR2GRAY);
 ```
 
 Let's inspect our image:
 
-```
+```cpp
 if (counter_ == 0)
     std::cout << "image_gray size: rows: " << image_gray.rows << 
                  ", cols: " << image_gray.cols << 
@@ -199,7 +199,7 @@ if (counter_ == 0)
 
 and display it in a new window:
 
-```
+```cpp
 cv::imshow("gray", image_gray);
 ```
 Compile and test your code as in the previous sections.
@@ -208,13 +208,13 @@ Compile and test your code as in the previous sections.
 
 Similarly, we apply our `cvtColor` function to our original `img` and store it in a new `img_gray` array.
 
-```
+```python
 img_gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
 ```
 
 Then, we inspect our image. Remember that our `shape` operator returns three values for color images and two values for grayscale images and that you can use the length of this vector to determine if your image is a multi- or single-channel array.
 
-```
+```python
 if (self.counter == 0):
     (rows,cols) = img_gray.shape
     print ('img_gray size: rows: {}, cols: {}'.format(rows, cols))
@@ -223,7 +223,7 @@ if (self.counter == 0):
 
 and show it:
 
-```
+```python
 cv2.imshow("gray", img_gray)
 ```
 
@@ -255,20 +255,20 @@ Therefore, we have two steps to create a segmented image. First, we find the pix
 
 First, we create our mask image (don't forget to declare it!) and fill it with zeros and ones, depending on whether the pixel is inside or outside our color range (**remember the order in our array: [Blue,Green,Red]**), respectively:
 
-```
+```cpp
 cv::Mat mask;
 cv::inRange(image_, cv::Scalar(0,0,220), cv::Scalar(240,255,240), mask);
 ```
 In the example, our target color is `red=255`, and `delta=20`, the blue and green channels vary from 0 to 255. Then, we copy only those pixels that met our range condition. We use the `image_.copyTo(output,mask)` to copy to our *output* image only those pixels with a ONE in our *mask*; we declare our output as `image_filtered_` and then:
 
-```
+```cpp
 cv::Mat image_filtered;
 image_.copyTo(image_filtered, mask);
 ```
 
 Finally, don't forget to show your images
 
-```
+```cpp
 cv::imshow("mask", mask);
 cv::imshow("image_filtered", image_filtered);
 ```
@@ -285,26 +285,26 @@ A segmented image in the red channel should look like
 
 Here, we define the valid color range we want to use (**remember the order in our array: [Blue,Green,Red]**). Now, we will select a blue color, so `blue=220` and `delta=10`, the red and green channels vary from 0 to 255, as follow:
 
-```
+```python
 lower_val = np.array([200,0,0])
 upper_val = np.array([240,255,255])
 ```
 
 Then, we create our mask with ONE value whenever a pixel is in that color range, we use the `cv2.inRange` function:
 
-```
+```python
 mask = cv2.inRange(self.img, lower_val, upper_val)
 ```
 
 Finally, we copy those pixels from our original to our segmented image as follows:
 
-```
+```python
 image_filtered = cv2.bitwise_and(self.img,self.img, mask= mask)
 ```
 
 Now, we show our results:
 
-```
+```python
 cv2.imshow("mask", mask)
 cv2.imshow("image_filtered", image_filtered)
 ```
@@ -337,7 +337,7 @@ We use the `image_.at<cv::Vec3b>(row_id,col_id)` attribute in our `image_` matri
 
 In this case, we will inspect the middle point in our array as follows:
 
-```
+```cpp
 if (counter == 0)
 {
 	int row_id, col_id;
@@ -361,7 +361,7 @@ Compile and test your code as in the previous sections.
 
 Here, we access the elements in our `img` array as in any other Python array: `img[row_id,col_id]` to get a color pixel in [Blue,Green,Red] order or a grayvalue scalar. **We ALWAYS indicate the rows first and then the columns**; again, be careful with the input order when you use different OpenCV functions in Python. Then, we get the values of our middle pixel element as:
 
-```
+```python
 if (counter == 0):
     (rows,cols,channels) = self.img.shape
     row_id = int(rows/2)
@@ -394,31 +394,31 @@ so let's apply that equation to all and every pixel in our image. To do so, we n
 
 First, we need to create a single channel matrix to store our new image, so it should have the same dimensions as our input and each value should be `uchar`:
 
-```
+```cpp
 cv::Mat image_gray_2 = cv::Mat::zeros(image_.rows,image_.cols, CV_8UC1);
 ```
 
 Then, we create our indices to access all the elements in our image. Please, remember which index corresponds to the rows and what to the columns! In our case, the `i` variable corresponds to the rows and the `j` index to the columns:
 
-```
+```cpp
 for(int i=0; i<image_.rows; i++)
 	for(int j=0; j<image_.cols; j++)
 ```
 Now, we access the pixel value of all (i,j) pixels and create a Gray value from the combination of the color channels.  We use the `image_.at<cv::Vec3b>(row_id,col_id)` operator; remember that this operator's output is a [Blue,Green,Red] vector so, we have:
 
-```
+```cpp
 int gray_val = 0.11*image_.at<cv::Vec3b>(i,j)[0] + 0.59*image_.at<cv::Vec3b>(i,j)[1] + 0.3*image_.at<cv::Vec3b>(i,j)[2];
 ```
 
 We store the `int` grayscale value in our `uchar` new `uchar` matrix at the (i,j) position:
 
-```
+```cpp
 image_gray_2.at<uchar>(i,j) = (unsigned char)gray_val;
 ```
 
 Your code should look something like:
 
-```
+```cpp
 cv::Mat image_gray_2 = cv::Mat::zeros(image_.rows,image_.cols, CV_8UC1);
 for(int i=0; i<image_.rows; i++)
     for(int j=0; j<image_.cols; j++)
@@ -430,7 +430,7 @@ for(int i=0; i<image_.rows; i++)
 
 Finally, don't forget to display your image (each new window should have its unique name):
 
-```
+```cpp
 cv::imshow("gray_2", image_gray_2);
 ```
 
@@ -440,28 +440,28 @@ Compile and test your code as in the previous sections.
 
 Similarly, we start by defining our new `uint8` matrix (the `uint8` data type in Python is similar to the `uchar` data type in C++):
 
-```
+```python
 (rows,cols,channels) = img.shape
 img_gray_2 = np.zeros( (rows,cols,1), np.uint8 )
 ```
 
 Then, we create our indices (please refer to the manual to know how the `range(int)` function works; basically, it creates a sequence of numbers from 0 to int-1), remember which index corresponds to the rows and the columns:
 
-```
+```python
 for i in range(rows):
 	for j in range(cols):
 ```
 
 Then, access to the information for pixel (i,j), combine it to create a grayscale value, and store it in our new grayscale image:
 
-```
+```python
 for i in range(rows):
 	for j in range(cols):
 ```
 
 Your code should look like:
 
-```
+```python
 (rows,cols,channels) = self.img.shape
 img_gray_2 = np.zeros( (rows,cols,1), np.uint8 )
 
@@ -473,7 +473,7 @@ for i in range(rows):
 
 Finally, don't forget to show your new image:
 
-```
+```python
 cv2.imshow("gray_2", img_gray_2)
 ```
 
