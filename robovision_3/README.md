@@ -180,6 +180,20 @@ and C++
 RCLCPP_INFO(this->get_logger(), "Point cloud converted to cv::Mat with size [%d, %d]", msg->height, msg->width);
 ```
 
+Now, we will process this information in a timer function `point_cloud_processing`, in Python
+
+```
+self.processing_timer_ = self.create_timer(0.030, self.point_cloud_processing)
+```
+
+and in C++
+
+```
+processing_timer_ = this->create_wall_timer(
+    std::chrono::milliseconds(30),
+    std::bind(&PointCloudCentroidNode::point_cloud_processing, this));
+```
+
 We access a single element in our array just as any array in Python `self.point_cloud_[row_id, col_id, 0]`. To access a single dimension X, Y, or Z, we can indicate it directly `self.point_cloud_[row_id, col_id, 0][XYZ]`, where XYZ=0 for the dimension X, XYZ=1 for the dimension Y, and XYZ=2 for the dimension Z. In our example, to access the 3D information in the central point of our image we enter
 
 ```
@@ -238,6 +252,8 @@ centroid.orientation.w = 1.0;
 // Publish the centroid pose
 centroid_publisher_->publish(centroid);
 ```
+
+## 2.2 Run your code
 
 Now, let's try our code. So, run the following commands:
 
