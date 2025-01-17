@@ -98,14 +98,14 @@ The main difference between a topic and a service is that, while a topic is work
 
 Let's compare our "rgbd_reader" and our "robovision_service" files (both in C++ and Python). They are very similar! We have two main changes. First, we don't have a publisher, as it sends a response under request. Second, we don't have a timer, as it is not working indefinitely. Instead, we create a ROS2 service that enters a callback function when we call the service. In Python it is
 
-```
+```python
 self.get_point_center_service_ = self.create_service(
     GetPointCenter, "get_point_center", self.point_cloud_processing)
 ```
 
 and in C++
 
-```
+```cpp
 get_point_center_service_ = this->create_service<robovision_interfaces::srv::GetPointCenter>(
     "get_point_center", 
     std::bind(&PointCloudCentroidNode::point_cloud_processing, this, 
@@ -118,39 +118,39 @@ Notice that we need to declare the service type, in this case, we are using our 
 
 First, let's compile it
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 and start it (don't forget to start your rosbag!)
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_services robovision_service
 ```
 
 In a different terminal, enter
 
-```
+```bash
 ros2 service list
 ```
 
 Can you see the service we just declared? Now enter
 
-```
+```bash
 ros2 service type /get_point_center
 ```
 
 What's the interface it is using? You can inspect it
 
-```
+```bash
 ros2 interfaces show robovision_interfaces/srv/GetPointCenter
 ```
 
 Finally, let's call our service
 
-```
+```bash
 ros2 service call /get_point_center robovision_interfaces/srv/GetPointCenter "{x: 320, y: 240}"
 ```
 
