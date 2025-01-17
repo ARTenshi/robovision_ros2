@@ -177,22 +177,24 @@ self.y_ = self.get_parameter("y").value
 ```
 Parameters `x` and `y` define the target coordinates to query from the service.
 
-2. **Service Call Setup**
+### 3.1.2 **Service Call Setup**
 
-A ROS2 timer is created to call the service periodically every 2.5 seconds:
+To show that we can call a service at any moment, we create a ROS2 timer to call the service periodically every 2.5 seconds:
 
 ```python
 self.client_call_timer_ = self.create_timer(2.5, self.client_caller)
 ```
 
-The `client_caller()` function prepares and sends a service request:
+The `client_caller()` function prepares and sends a service request through a `call_get_point_center_server`:
 
 ```python
 def client_caller(self):
     self.call_get_point_center_server(self.x_, self.y_)
 ```
 
-3. **Creating the Client and Making a Request**
+Every time we want to call our service, we use this function. We will explain this function next.
+
+#### **Creating the Client and Making a Request**
 
 A ROS2 client is created with the specified service type (`GetPointCenter`) and name (`get_point_center`):
 
@@ -214,9 +216,9 @@ future.add_done_callback(
     partial(self.callback_call_point_cloud, _x=request.x, _y=request.y))
 ```
 
-4. **Handling the Response**
+#### **Handling the Response**
 
-The callback `callback_call_point_cloud()` processes the service response:
+The callback `callback_call_point_cloud()` processes the service response (we store the response in a global variable for future use):
 
 ```python
 def callback_call_point_cloud(self, future, _x, _y):
@@ -232,27 +234,30 @@ def callback_call_point_cloud(self, future, _x, _y):
 
 ---
 
-## Running the Client
+### 3.1.3 Test your code
 
-1. Ensure the `robovision_interfaces` package is built and sourced. This includes the `GetPointCenter` service definition.
-
-2. Run the client node:
+First, let's compile it
 
 ```bash
-ros2 run robovision_client robovision_client
+cd ~/robovision_ros2_ws
+colcon build
 ```
 
-The client will periodically query the `get_point_center` service with the coordinates (`x`, `y`) and log the response.
+and start our service (don't forget to start your rosbag!)
 
----
+```bash
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_services robovision_service
+```
 
-## Key Takeaways
+In a different terminal, enter
 
-- A **ROS2 client** enables nodes to request actions or data from a **ROS2 service**.
-- Asynchronous callbacks ensure non-blocking execution while waiting for responses.
-- Proper error handling and logging improve robustness and debugging ease.
+```bash
+source ~/robovision_ros2_ws/install/setup.bash
+ros2 run robovision_services robovision_client.py
+```
 
-By understanding the client-server interaction shown in this example, you can build your custom ROS2 clients tailored to your application's needs.
+What was the result?
 
 
 ## Authors
