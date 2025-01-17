@@ -143,8 +143,6 @@ Please, inspect the `rgbd_reader.cpp` implementation. The structure is very simi
 
 # 2. Point Cloud's manipulation
 
-For ease, we will only provide the code in Python and C++ for this unit. 
-
 ## 2.1 Single element access
 
 Now, we will process this information in a timer function `point_cloud_processing`, in Python
