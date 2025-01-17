@@ -147,39 +147,6 @@ For ease, we will only provide the code in Python and C++ for this unit.
 
 ## 2.1 Single element access
 
-Our subscriber  to the `/camera/depth_registered/points` calls the `callback_point_cloud` function. There, we show how to access a single element. We first read our message `msg` of type `PointCloud2` and convert it to a Python array
-
-```
-self.point_cloud_ = self.point_cloud_.reshape((msg.height, msg.width, -1))
-```
-
-and a cv::Mat in C++
-
-```
-point_cloud_ = cv::Mat(msg->height, msg->width, CV_32FC4);
-const uint8_t *data_ptr = msg->data.data();
-
-for (size_t i = 0; i < msg->height; ++i) {
-    for (size_t j = 0; j < msg->width; ++j) {
-        const float *point = reinterpret_cast<const float*>(data_ptr + (i * msg->row_step + j * msg->point_step));
-        point_cloud_.at<cv::Vec4f>(i, j) = cv::Vec4f(point[0], point[1], point[2], point[3]);
-    }
-}
-```
-
-As we mentioned before, the point cloud contains the 3D position in the space of EACH pixel, and therefore the dimensions of our array are the same as de dimensions of our image in Python
-
-```
-rows, cols, _ = self.point_cloud_.shape
-print ('new message has arrived; point cloud size: rows: {}, cols: {}'.format(rows, cols))
-```
-
-and C++
-
-```
-RCLCPP_INFO(this->get_logger(), "Point cloud converted to cv::Mat with size [%d, %d]", msg->height, msg->width);
-```
-
 Now, we will process this information in a timer function `point_cloud_processing`, in Python
 
 ```
