@@ -19,6 +19,8 @@
   <depend>sensor_msgs_py</depend>
   <depend>geometry_msgs</depend>
 
+  <depend>tf2</depend>
+  <depend>tf2_geometry_msgs</depend>
   <depend>robovision_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
