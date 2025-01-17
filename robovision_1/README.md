@@ -16,7 +16,7 @@ ROS2 is designed for object-oriented programming (OOP), and therefore we will pr
 
 The basic **C++** structure is as follows:
 
-```
+```cpp
 #include "rclcpp/rclcpp.hpp"
 
 class MyCustomNode : public rclcpp::Node // CHANGE CLASS NAME
@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
 While the basic **Python** structure is:
 
-```
+```python
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
@@ -72,20 +72,20 @@ Have a look at the `my_publisher.cpp` file. This file presents the basic structu
 
 The `main` section remains the same, and we use it to call our class; however, we have modified it to get some arguments. Within our `ImagePublisherNode` class, first, we need to create a node object and give it a unique name:
 
-```
+```cpp
 ImagePublisherNode(const std::string & image_path) : Node("image_publisher")
 ```
 
 Then, we create a ROS2 publisher and give it a unique name to be shown as a ROS2 topic, so anyone else can access it without confusion. The structure is simple: create_publisher<msg::Type>("topic/name", 10). In this case, the type is `sensor_msgs::msg::Image` and the name of our output topic is `camera/image`, as follows:
 
-```
+```cpp
 image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera/image", 10);
 
 ```
 
 Now, let's gather some data. We will open an image using OpenCV and then publish it in our topic. First, we read the image:
 
-```
+```cpp
 cv::Mat cv_image = cv::imread(image_path, cv::IMREAD_COLOR);
 if (cv_image.empty()) {
     RCLCPP_ERROR(this->get_logger(), "Failed to load image from path: %s", image_path.c_str());
@@ -95,7 +95,7 @@ if (cv_image.empty()) {
 
 and we convert it to a **ROS message**, the type of data that can be sent through the ROS framework:
 
-```
+```cpp
 image_msg_ = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", cv_image).toImageMsg();
 ```
 
@@ -103,14 +103,14 @@ Now we can publish this message.
 
 We can do it once (`image_publisher_->publish(*image_msg_)`), but it means that the information will be only available for a fraction of time; if you don't access it at that very moment, you won't be able to use it anymore. So, let's publish it all the time! We first decide on a frame rate, which is the number of **frames per second** (fps). In general, we consider **real-time** something around 30 fps. We use a `while` loop to publish our image at 30 Hz (i.e. 30 fps). In ROS2, we need to create a **tiner**, that will iterate at a given frequency once the node starts to spin in the `main` section:
 
-```
+```cpp
 image_timer_ = this->create_wall_timer(std::chrono::milliseconds(30),
 				       std::bind(&ImagePublisherNode::publish_image, this));
 ```
 
 This **timer** will call a function (`ImagePublisherNode::publish_image`) where we can publish our image:
 
-```
+```cpp
 void publish_image()
 {
     image_publisher_->publish(*image_msg_);
@@ -119,7 +119,7 @@ void publish_image()
 
 Finally, notice that we need to define our variables; in particular, in C++, our ROS2 variables are all shared pointers and we need to define them as such:
 
-```
+```cpp
 sensor_msgs::msg::Image::SharedPtr image_msg_;
 
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr image_publisher_;
@@ -132,39 +132,39 @@ And that's it, we have our first ROS2 publisher.
 
 Run the following command in a terminal:
 
-```
+```bash
 ros2 topic list
 ```
 
 You should see something like:
 
-```
+```bash
 /parameter_events
 /rosout
 ```
 
 Now, in the same terminal, run the following commands:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_publisher ~/robovision_ros2_ws/src/robovision_ros2/data/images/baboon.png
 ```
 
 Then, in a new terminal, run this command again:
 
-```
+```bash
 ros2 topic list
 ```
 
 Do you remember this line `image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera/image", 10);`? Well, now we can see our topic `/camera/image`! Furthermore, we can get the details of it. If we enter the command:
 
-```
+```bash
 ros2 topic info /camera/image
 ```
 
 we can see:
 
-```
+```bash
 Type: sensor_msgs/msg/Image
 Publisher count: 1
 Subscription count: 0
@@ -173,19 +173,19 @@ Subscription count: 0
 
 Finally, enter:
 
-```
+```bash
 ros2 node list
 ```
 
 and
 
-```
+```bash
 ros2 node info /image_publisher
 ```
 
 we see:
 
-```
+```bash
 image_publisher
   Publishers:
     /camera/image: sensor_msgs/msg/Image
@@ -201,38 +201,38 @@ To give you an idea of how ROS2 works, we will help you to solve this task this 
 
 Do you remember our ROS2 publisher? We need one publisher per topic, so let's add a new one (don't forget to give a different and unique name to each topic, in this case, we named it `camera/scaled_image`):
 
-```
+```cpp
 scaled_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera/scaled_image", 10);
 ```
 
 Don't forget to define it:
 
-```
+```cpp
 rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr scaled_image_publisher_;
 ```
 
 After a short search on the internet, we found that, to scale an image in OpenCV, we can use the following command:
 
-```
+```cpp
 cv::Mat scaled_image;
 cv::resize(cv_image, scaled_image, cv::Size(), 0.5, 0.5, CV_INTER_AREA);
 ```
 
 Now, we need to create a new image message:
 
-```
+```cpp
 scaled_image_msg_ = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", scaled_image).toImageMsg();
 ```
 
 and publish our scaled image:
 
-```
+```cpp
 scaled_image_publisher_->publish(*scaled_image_msg_);
 ```
 
 Your code should look something like:
 
-```
+```cpp
 #include "rclcpp/rclcpp.hpp"
 
 #include <sensor_msgs/msg/image.hpp>
@@ -307,27 +307,27 @@ Now let's test it!
 
 First, we need to compile our code, in a new terminal run:
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 Now, run the following command:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_publisher ~/robovision_ros2_ws/src/robovision_ros2/data/images/baboon.png
 ```
 
 Finally, in a new terminal, run this command:
 
-```
+```bash
 ros2 topic list
 ```
 
 and
 
-```
+```bash
 ros2 node info /image_publisher
 ```
 
@@ -342,7 +342,7 @@ Have a look at the `my_camera_publisher.cpp` file. This file presents the basic 
 
 First, we started our node as before:
 
-```
+```cpp
 image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>("camera/image", 10);
 ```
 
@@ -352,7 +352,7 @@ Let's open our camera! Every camera connected to your computer has an ID number,
 
 Now, remember how we enter the image path in our previous code, in the `main` function:
 
-```
+```cpp
 if (argc != 2) {
     RCLCPP_ERROR(rclcpp::get_logger("rclcpp"), "Usage: my_publisher <image_path>");
     rclcpp::shutdown();
@@ -364,7 +364,7 @@ std::string image_path = argv[1];
 
 However, ROS has a built-in option to enter dynamic arguments, and we will use it from now on -- this will be useful when creating launch files. To do this, in our class definition, for a camera_index variable, we declare:
 
-```
+```cpp
 // Declare and get the camera index parameter (default is 0)
 this->declare_parameter<int>("camera_index", 0);
 int camera_index = this->get_parameter("camera_index").as_int();
@@ -372,7 +372,7 @@ int camera_index = this->get_parameter("camera_index").as_int();
 
 Then, the following lines should open a camera with ID camera_index:
 
-```
+```cpp
 // Open the camera
 capture_.open(camera_index);
 
@@ -386,7 +386,7 @@ if (!capture_.isOpened())
 
 Now, we should notice that, unlike static images, video sequences change in time and therefore we should update our frame at a desired frame rate (depending on your device specifications). Therefore, we need to get a new frame in our timer callback function (`capture_ >> cv_image;`) and publish it. In general, a camera takes some time to start after you call it, so we need to wait until our program starts receiving a video stream (we use the `!capture_.isOpened()` to do that). Then, our code to read and publish camera images is:
 
-```
+```cpp
 void publish_image()
 {
     cv::Mat cv_image;
@@ -409,34 +409,34 @@ void publish_image()
 
 First, we need to compile our code, in a new terminal run:
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 Now, run the next command:
 
-```
+```bash
 ros2 topic list
 ```
 
 You should see something like this:
 
-```
+```bash
 /parameter_events
 /rosout
 ```
 
 Now, in the same terminal, run the following commands:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_camera_publisher
 ```
 
 Then, again, in a new terminal, run this command:
 
-```
+```bash
 ros2 topic list
 ```
 
@@ -444,7 +444,7 @@ Can you explain the output? How do you get extra information from your topic?
 
 If you want to test more than one camera, you can specify using the `--ros-args` and, for a parameter declaration, `-p param_name:=param_value`; in this case, we set the `camera_index` variable with your camera index (as an example, we declare it as 0):
 
-```
+```bash
 ros2 run robovision_images my_camera_publisher --ros-args -p camera_index:=0
 ```
 
@@ -465,20 +465,20 @@ Now that we have a stream of images being published in ROS, let's do something w
 
 As with any node in ROS, we need to start it and give it a unique name:
 
-```
+```cpp
 ImageSubscriberNode() : Node("image_subscriber")
 ```
 
 Now, again, we need to create a ROS subscriber. The basic structure is: `create_subscription<msg::Type>("topic/name", queue_size, callback_function)`; the `msg::Type` is of the same type as the topic we want to get. Also, we tell ROS which function will be called every time a new image arrives. In our example, our `camera/image` topic is of type `sensor_msgs::msg::Image` and we call a `callback_image`, we declare it with a std::bind (don't worry about it, just use this structure every time you subscribe to a topic!). Then we have:
 
-```
+```cpp
 image_subscriber_ = this->create_subscription<sensor_msgs::msg::Image>(
     "camera/image", 10, std::bind(&ImageSubscriberNode::callback_image, this, std::placeholders::_1));
 ```
 
 That was easy... but now we need to create the callback function. The basic structure consists of a function's name and, as a parameter, the variable with the data type that will be entered. In this case, our `msg` variable is of type `sensor_msgs::msg::Image::SharedPtr`:
 
-```
+```cpp
 void callback_image(const sensor_msgs::msg::Image::SharedPtr msg)
 ```
 
@@ -486,7 +486,7 @@ Inside this function, we can process our data. However, we prefer to use our sub
 
 Therefore, first, let's focus on our callback function. We first need to transform our `sensor_msgs::msg::Image::SharedPtr` data in the `msg` variable to `cv::Mat`:
 
-```
+```cpp
 void callback_image(const sensor_msgs::msg::Image::SharedPtr msg)
 {
     image_ = cv_bridge::toCvCopy(msg, "bgr8")->image;
@@ -496,7 +496,7 @@ void callback_image(const sensor_msgs::msg::Image::SharedPtr msg)
 
 And then, we can use it in our timer function `image_processing()`; in this case, we will only display it with OpenCV (don't forget the `cv::waitKey(1);` function to tell OpenCV to stop and show your images):
 
-```
+```cpp
 void image_processing()
 {
     if (is_image_){
@@ -510,26 +510,26 @@ void image_processing()
 
 Similarly, in Python we first start our node and name it:
 
-```
+```python
 super().__init__("image_subscriber")
 ```
 
 Then, we have to create a subscriber to tell ROS which function we will use when a new message comes as follows:
 
-```
+```python
 self.subscriber_ = self.create_subscription(
     Image, "camera/image", self.callback_camera_image, 10)
 ```
 
 As in the C++ example, we can process our new data inside the callback function. However, we will use the callback functions to update our variables and process them later in a custom function (e.g. our timer function). So, in Python, we declare our callback function only with the name of our message but we let the data type as an implicit value:
 
-```
+```python
 def callback_camera_image(self, msg)
 ```
 
 We then transform our ROS message to an OpenCV array:
 
-```
+```python
 #Transform the new message to an OpenCV matrix
 bridge_rgb=CvBridge()
 self.img = bridge_rgb.imgmsg_to_cv2(msg,msg.encoding).copy()
@@ -537,19 +537,19 @@ self.img = bridge_rgb.imgmsg_to_cv2(msg,msg.encoding).copy()
 
 and we let know Python that we have received our first message:
 
-```
+```python
 self.is_img = True
 ```
 
 Finally, we declare our timer using a basic structure `create_timer(time_in_seconds, callback_function)` as:
 
-```
+```python
 self.processing_timer_ = self.create_timer(0.030, self.image_processing) #update image each 30 miliseconds
 ```
 
 We, then, can process our data in the callback function; in our example, we are going to display our image:
 
-```
+```python
 def image_processing(self):
     if self.is_img:
         #Show your images
@@ -564,21 +564,21 @@ As you can see, our object-oriented programming (OOP) classes are similar in C++
 
 Run the following command in a terminal to compile your code:
 
-```
+```bash
 cd ~/robovision_ros2_ws
 colcon build
 ```
 
 Then, run the next command:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_publisher ~/robovision_ros2_ws/src/robovision_ros2/data/images/baboon.png
 ```
 
 Now, in a different terminal, run the following commands:
 
-```
+```bash
 source ~/robovision_ros2_ws/install/setup.bash
 ros2 run robovision_images my_subscriber
 ```
@@ -587,17 +587,17 @@ What did happen?
 
 In a new terminal run this command:
 
-```
+```bash
 ros2 node list
 ```
 
-```
+```bash
 ros2 node info /image_subscriber
 ```
 
 Can you get what is happening?
 
-```
+```bash
 /image_subscriber
   Subscribers:
     /camera/image: sensor_msgs/msg/Image
@@ -611,27 +611,27 @@ The `ros2 node info` let us know that our *Image* topic `/camera/image` is being
 
 **Hint** In C++, you need to create a second subscriber and a corresponding callback to the selected topic:
 
-```
+```cpp
 scaled_image_subscriber_ = create_subscription<sensor_msgs::msg::Image>(
             "camera/scaled_image", 10, std::bind(&ImageSubscriberNode::callback_scaled_image, this, std::placeholders::_1));
 ```
 
 and declare your new callback function *callback_scaled_image*:
 
-```
+```cpp
 void callback_scaled_image(const sensor_msgs::msg::Image::SharedPtr msg)
 ```
 
 Similarly, in Python, you need to subscribe to the new topic:
 
-```
+```python
 self.scaled_image_subscriber_ = self.create_subscription(
     Image, "camera/scaled_image", self.callback_scaled_image, 10)
 ```
 
 and define your new callback function *callback_scaled_image*:
 
-```
+```python
 def callback_scaled_image(self, msg)
 ```
 
