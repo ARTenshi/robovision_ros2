@@ -17,6 +17,8 @@ find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(robovision_interfaces REQUIRED)
 
 include_directories(${cv_bridge_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
@@ -30,6 +32,8 @@ ament_target_dependencies(robovision_service
     geometry_msgs
     robovision_interfaces
     OpenCV
+    tf2
+    tf2_geometry_msgs
 )
 
 add_executable(robovision_client src/robovision_client.cpp)
@@ -40,6 +44,8 @@ ament_target_dependencies(robovision_client
     geometry_msgs
     robovision_interfaces
     OpenCV
+    tf2
+    tf2_geometry_msgs
 )
 
 # Python section
